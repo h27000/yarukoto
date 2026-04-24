@@ -372,7 +372,13 @@ const CONF_KEY = 'yarukoto_conf';
 function loadConf(){ try{return JSON.parse(localStorage.getItem(CONF_KEY))||{};}catch{return{};} }
 function saveConf(c){ localStorage.setItem(CONF_KEY,JSON.stringify(c)); }
 
-let conf = loadConf(); // { dbUrl, syncCode }
+// Firebase URL を事前設定
+let conf = loadConf();
+if (!conf.dbUrl) {
+  conf.dbUrl = 'https://tasklist-ea51c-default-rtdb.firebaseio.com';
+  if (!conf.syncCode) conf.syncCode = uid();
+  saveConf(conf);
+}
 
 // ── DATA ──
 function load(){
