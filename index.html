@@ -70,21 +70,9 @@
       background:rgba(255,140,0,.14);color:var(--or);border-radius:3px;padding:1px 3px;font-weight:800}
 
     /* CHART */
-    .chart-card{background:var(--card);border-radius:20px;margin-top:14px;
+    .chart-card{background:var(--card);border-radius:20px;margin-bottom:14px;
       box-shadow:0 4px 20px rgba(255,140,0,.1);border:1.5px solid var(--border);
-      padding:18px 20px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
-    .circle-wrap{flex-shrink:0;text-align:center}
-    .circle-wrap p{font-size:.72rem;color:var(--muted);margin-top:4px;font-weight:700}
-    .bars-wrap{flex:1;min-width:200px}
-    .bars-title{font-size:.75rem;font-weight:800;color:var(--muted);margin-bottom:10px}
-    .bars{display:flex;gap:10px;align-items:flex-end;height:70px}
-    .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
-    .bar-pct{font-size:.65rem;font-weight:700;color:var(--muted)}
-    .bar-bg{width:100%;background:#ffe0a0;border-radius:5px 5px 0 0;position:relative;overflow:hidden;height:50px}
-    .bar-fill{position:absolute;bottom:0;left:0;right:0;border-radius:5px 5px 0 0;
-      background:linear-gradient(180deg,var(--yl),var(--or));transition:height .6s}
-    .bar-lbl{font-size:.65rem;color:var(--muted);font-weight:700}
-    .bar-col.cur .bar-lbl{color:var(--or)}
+      padding:14px 20px;display:flex;gap:16px;align-items:center}
 
     /* DAY PANEL */
     .dpanel{display:none;margin-top:10px}
@@ -243,6 +231,28 @@
 
 <!-- Calendar -->
 <div class="wrap">
+  <!-- Achievement Chart -->
+  <div class="chart-card" id="chartCard">
+    <svg id="circleChart" width="80" height="80" viewBox="0 0 90 90">
+      <circle cx="45" cy="45" r="34" fill="none" stroke="#ffe082" stroke-width="10"/>
+      <circle id="circleArc" cx="45" cy="45" r="34" fill="none" stroke="url(#cgrad)"
+        stroke-width="10" stroke-linecap="round"
+        stroke-dasharray="0 213.6" transform="rotate(-90 45 45)"/>
+      <defs>
+        <linearGradient id="cgrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#ff8c00"/>
+          <stop offset="100%" style="stop-color:#ffd700"/>
+        </linearGradient>
+      </defs>
+      <text id="circleNum" x="45" y="49" text-anchor="middle"
+        font-size="15" font-weight="900" fill="#ff8c00">0%</text>
+    </svg>
+    <div>
+      <div style="font-size:1rem;font-weight:900;color:var(--or)" id="chartDone">0 / 0 完了</div>
+      <div style="font-size:.78rem;color:var(--muted);margin-top:2px">今月の達成率</div>
+    </div>
+  </div>
+
   <div class="cal-card">
     <div class="cal-wdays">
       <div class="wdl sun">日</div><div class="wdl">月</div><div class="wdl">火</div>
@@ -250,31 +260,6 @@
       <div class="wdl sat">土</div>
     </div>
     <div class="cal-grid" id="calGrid"></div>
-  </div>
-
-  <!-- Achievement Chart -->
-  <div class="chart-card" id="chartCard">
-    <div class="circle-wrap">
-      <svg id="circleChart" width="90" height="90" viewBox="0 0 90 90">
-        <circle cx="45" cy="45" r="34" fill="none" stroke="#ffe082" stroke-width="10"/>
-        <circle id="circleArc" cx="45" cy="45" r="34" fill="none" stroke="url(#cgrad)"
-          stroke-width="10" stroke-linecap="round"
-          stroke-dasharray="0 213.6" transform="rotate(-90 45 45)"/>
-        <defs>
-          <linearGradient id="cgrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#ff8c00"/>
-            <stop offset="100%" style="stop-color:#ffd700"/>
-          </linearGradient>
-        </defs>
-        <text id="circleNum" x="45" y="49" text-anchor="middle"
-          font-size="15" font-weight="900" fill="#ff8c00">0%</text>
-      </svg>
-      <p>今月の達成率</p>
-    </div>
-    <div class="bars-wrap">
-      <div class="bars-title">週ごとの完了率</div>
-      <div class="bars" id="barsEl"></div>
-    </div>
   </div>
 
   <!-- Day Panel -->
@@ -530,41 +515,14 @@ function renderCal(){
 }
 
 function renderChart(){
-  const tasks=mTasks(CY,CM);
-  const nw=numWeeks(CY,CM);
-  const days=dim(CY,CM);
-  const todayD=CY===now.getFullYear()&&CM===now.getMonth()+1?now.getDate():days;
-  const curWeek=Math.floor((fdow(CY,CM)+todayD-1)/7)+1;
-
-  // Overall
-  let tot=tasks.length,done=tasks.filter(t=>t.done).length;
-  for(const r of D.rec){
-    if(r.day<=days){tot++;if(isRecDone(r.id,CY,CM,r.day))done++;}
-  }
+  const tasks=mTasks(CY,CM), days=dim(CY,CM);
+  let tot=tasks.length, done=tasks.filter(t=>t.done).length;
+  for(const r of D.rec){ if(r.day<=days){tot++;if(isRecDone(r.id,CY,CM,r.day))done++;} }
   const pct=tot?Math.round(done/tot*100):0;
   const arc=Math.min(pct/100*213.6,213.6);
   document.getElementById('circleArc').setAttribute('stroke-dasharray',`${arc} 213.6`);
   document.getElementById('circleNum').textContent=pct+'%';
-
-  // Weekly bars
-  const barsEl=document.getElementById('barsEl'); barsEl.innerHTML='';
-  for(let w=1;w<=nw;w++){
-    const {s,e}=weekRange(CY,CM,w);
-    const wt=tasks.filter(t=>{const d=+t.date.split('-')[2];return d>=s&&d<=e;});
-    let wTot=wt.length,wDone=wt.filter(t=>t.done).length;
-    for(let d=s;d<=e;d++){
-      for(const r of D.rec){
-        if(r.day===d){wTot++;if(isRecDone(r.id,CY,CM,d))wDone++;}
-      }
-    }
-    const wp=wTot?Math.round(wDone/wTot*100):0;
-    const col=document.createElement('div');
-    col.className='bar-col'+(w===curWeek?' cur':'');
-    col.innerHTML=`<div class="bar-pct">${wTot?wp+'%':''}</div>
-      <div class="bar-bg"><div class="bar-fill" style="height:${wp}%"></div></div>
-      <div class="bar-lbl">W${w}</div>`;
-    barsEl.appendChild(col);
-  }
+  document.getElementById('chartDone').textContent=`${done} / ${tot} 完了`;
 }
 
 function selectDate(ds){
@@ -624,8 +582,72 @@ function renderSecs(){
   const c=document.getElementById('secs'); c.innerHTML='';
   const co=carryover();
   if(co.length) c.appendChild(makeCarryover(co));
-  const nw=numWeeks(CY,CM);
-  for(let w=1;w<=nw;w++) c.appendChild(makeWeek(w));
+  c.appendChild(makeAllTasks());
+}
+
+function makeAllTasks(){
+  const card=document.createElement('div'); card.className='wcard';
+  card.innerHTML=`<div class="whd"><span class="wbadge">${CM}月</span><span class="wtitle">すべてのタスク</span></div><div class="tlist"></div>`;
+  const list=card.querySelector('.tlist');
+
+  // 全タスク（固定タスク＋通常タスク）を日付順に結合
+  const days=dim(CY,CM);
+  const mk=mkey(CY,CM);
+  const allItems=[];
+
+  // 固定タスク
+  for(const r of D.rec){
+    if(r.day>=1&&r.day<=days){
+      allItems.push({type:'rec',r,d:r.day,sortKey:fmt(CY,CM,r.day)+'_0'});
+    }
+  }
+  // 通常タスク
+  for(const t of mTasks(CY,CM)){
+    allItems.push({type:'task',t,sortKey:t.date+'_'+PRIOORD[t.priority||'mid']});
+  }
+  allItems.sort((a,b)=>a.sortKey<b.sortKey?-1:1);
+
+  for(const item of allItems){
+    if(item.type==='rec'){
+      const {r,d}=item;
+      const done=isRecDone(r.id,CY,CM,d);
+      const el=document.createElement('div');
+      el.className=`ti rec-ti${done?' done':''}`;
+      el.innerHTML=`<div class="prio-dot pm"></div><div class="cb"></div>
+        <span class="ttxt">📍 ${escH(r.text)}</span>
+        <span class="dlbl">${CM}月${d}日</span>
+        <span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span>`;
+      el.addEventListener('click',()=>{ toggleRecDoneData(r.id,CY,CM,d); saveAndSync(); });
+      list.appendChild(el);
+    } else {
+      list.appendChild(makeTIEl(item.t,mk));
+    }
+  }
+
+  // 追加ボタン
+  const tog=document.createElement('button'); tog.className='togbtn'; tog.textContent='＋ タスクを追加';
+  const arow=document.createElement('div'); arow.className='arow'; arow.style.display='none';
+  arow.innerHTML=`<input class="ainput" type="text" placeholder="タスクを追加...">
+    <select class="asel">
+      <option value="life">生活</option><option value="work">仕事</option>
+      <option value="health">健康</option><option value="study">学習</option><option value="fun">趣味</option>
+    </select>
+    <select class="asel">
+      <option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option>
+    </select>
+    <button class="abtn">追加</button>`;
+  tog.addEventListener('click',()=>{ tog.style.display='none'; arow.style.display='flex'; arow.querySelector('input').focus(); });
+  const doAdd=()=>{
+    const inp=arow.querySelector('input'),sels=arow.querySelectorAll('select');
+    const text=inp.value.trim(); if(!text)return;
+    const td=new Date().getFullYear()===CY&&new Date().getMonth()+1===CM?new Date().getDate():1;
+    mTasks(CY,CM).push({id:uid(),text,tag:sels[0].value,priority:sels[1].value,date:fmt(CY,CM,td),done:false,carriedFrom:null});
+    saveAndSync();
+  };
+  arow.querySelector('.abtn').addEventListener('click',doAdd);
+  arow.querySelector('input').addEventListener('keydown',e=>{if(e.key==='Enter')doAdd();});
+  list.appendChild(tog); list.appendChild(arow);
+  return card;
 }
 
 function makeCarryover(tasks){
