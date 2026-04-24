@@ -5,8 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>やることリスト</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="やること">
   <meta name="theme-color" content="#ff8c00">
+  <link rel="icon" type="image/svg+xml" id="favicon">
+  <link rel="apple-touch-icon" id="appleTouchIcon">
+  <link rel="manifest" id="pwaManifest">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     :root{--or:#ff8c00;--yl:#ffd700;--txt:#3e2a00;--muted:#b06000;
@@ -862,6 +866,72 @@ if(!Object.keys(D.months).length){
 if(conf.dbUrl&&conf.syncCode){ setSyncState('pending'); pullFromFirebase(); }
 
 render();
+
+// ── PWA ICON (みかん☀️チェック) ──
+(function(){
+  const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <defs>
+      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ffcc00"/>
+        <stop offset="100%" stop-color="#ff8c00"/>
+      </linearGradient>
+      <radialGradient id="shine" cx="32%" cy="28%" r="60%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="#ff7a00" stop-opacity="0"/>
+      </radialGradient>
+      <clipPath id="oc"><circle cx="50" cy="54" r="25"/></clipPath>
+    </defs>
+    <rect width="100" height="100" rx="22" fill="url(#bg)"/>
+    <g transform="translate(50,54)" fill="#fff" opacity="0.88">
+      <rect x="-3.5" y="-43" width="7" height="13" rx="3.5"/>
+      <rect x="-3.5" y="-43" width="7" height="13" rx="3.5" transform="rotate(45)"/>
+      <rect x="-3.5" y="-43" width="7" height="13" rx="3.5" transform="rotate(90)"/>
+      <rect x="-3.5" y="-43" width="7" height="13" rx="3.5" transform="rotate(135)"/>
+      <rect x="-3.5" y="-43" width="7" height="13" rx="3.5" transform="rotate(180)"/>
+      <rect x="-3.5" y="-43" width="7" height="13" rx="3.5" transform="rotate(225)"/>
+      <rect x="-3.5" y="-43" width="7" height="13" rx="3.5" transform="rotate(270)"/>
+      <rect x="-3.5" y="-43" width="7" height="13" rx="3.5" transform="rotate(315)"/>
+    </g>
+    <circle cx="50" cy="54" r="25" fill="#ff7a00"/>
+    <circle cx="50" cy="54" r="25" fill="url(#shine)"/>
+    <g clip-path="url(#oc)" stroke="#e65100" stroke-width="1.2" opacity="0.28">
+      <line x1="50" y1="29" x2="50" y2="79"/>
+      <line x1="27" y1="41" x2="73" y2="67"/>
+      <line x1="27" y1="67" x2="73" y2="41"/>
+    </g>
+    <rect x="47" y="21" width="6" height="11" rx="3" fill="#43a047"/>
+    <ellipse cx="57.5" cy="24.5" rx="8.5" ry="4.5" fill="#66bb6a" transform="rotate(-28,57.5,24.5)"/>
+    <polyline points="37,54 47,65 65,41" fill="none" stroke="#fff"
+      stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+
+  // SVG favicon
+  const svgBlob = new Blob([SVG], {type:'image/svg+xml'});
+  const svgUrl = URL.createObjectURL(svgBlob);
+  document.getElementById('favicon').href = svgUrl;
+
+  // PNG for apple-touch-icon (iOS)
+  const img = new Image();
+  img.onload = function(){
+    const c = document.createElement('canvas');
+    c.width = c.height = 192;
+    c.getContext('2d').drawImage(img, 0, 0, 192, 192);
+    const png = c.toDataURL('image/png');
+    document.getElementById('appleTouchIcon').href = png;
+    URL.revokeObjectURL(svgUrl);
+
+    // PWA Manifest
+    const manifest = {
+      name:'やることリスト',short_name:'やること',
+      start_url:'./',display:'standalone',
+      background_color:'#fff8e1',theme_color:'#ff8c00',
+      icons:[{src:png,sizes:'192x192',type:'image/png'}]
+    };
+    const mb = new Blob([JSON.stringify(manifest)],{type:'application/json'});
+    document.getElementById('pwaManifest').href = URL.createObjectURL(mb);
+  };
+  img.src = svgUrl;
+})();
 </script>
 </body>
 </html>
