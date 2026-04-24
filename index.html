@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>やることリスト</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="やること">
+  <meta name="theme-color" content="#ff8c00">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--or:#ff8c00;--yl:#ffd700;--txt:#3e2a00;--muted:#b06000;
+      --card:rgba(255,255,255,.84);--border:rgba(255,180,50,.3)}
+    body{font-family:'Hiragino Sans','Yu Gothic','Noto Sans JP',sans-serif;
+      background:linear-gradient(135deg,#fff8e1 0%,#fff3cd 55%,#ffe0b2 100%);
+      min-height:100vh;color:var(--txt);padding-bottom:60px}
+
+    /* HEADER */
+    header{background:linear-gradient(135deg,var(--or),var(--yl));
+      padding:14px 18px 12px;position:sticky;top:0;z-index:100;
+      box-shadow:0 3px 18px rgba(255,140,0,.3)}
+    .hd-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;gap:8px}
+    .mnav{display:flex;align-items:center;gap:8px}
+    .mnav h1{color:#fff;font-size:1.35rem;font-weight:900;min-width:140px;text-align:center}
+    .nbtn{background:rgba(255,255,255,.25);border:none;color:#fff;font-size:1.2rem;
+      width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;
+      align-items:center;justify-content:center;transition:background .2s;flex-shrink:0}
+    .nbtn:hover{background:rgba(255,255,255,.4)}
+    .hd-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+    .rbtn,.syncbtn{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.5);
+      color:#fff;padding:6px 11px;border-radius:18px;cursor:pointer;font-size:.78rem;
+      font-family:inherit;font-weight:700;transition:background .2s;white-space:nowrap}
+    .rbtn:hover,.syncbtn:hover{background:rgba(255,255,255,.35)}
+    .sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+      background:#fff;margin-right:4px;transition:background .3s}
+    .sync-dot.ok{background:#a5d6a7}.sync-dot.pending{background:#fff176}
+    .sync-dot.err{background:#ef9a9a}.sync-dot.off{background:rgba(255,255,255,.5)}
+    .prog-wrap{display:flex;align-items:center;gap:9px}
+    .prog-bg{flex:1;background:rgba(255,255,255,.3);border-radius:99px;height:8px;overflow:hidden}
+    .prog-bar{height:100%;background:#fff;border-radius:99px;width:0;transition:width .5s}
+    .prog-txt{color:rgba(255,255,255,.92);font-size:.78rem;white-space:nowrap;min-width:60px;text-align:right}
+
+    /* CALENDAR */
+    .wrap{max-width:860px;margin:20px auto 0;padding:0 13px}
+    .cal-card{background:var(--card);border-radius:20px;
+      box-shadow:0 4px 20px rgba(255,140,0,.12);border:1.5px solid var(--border);overflow:hidden}
+    .cal-wdays{display:grid;grid-template-columns:repeat(7,1fr);
+      background:rgba(255,200,0,.07);padding:6px 0 3px}
+    .wdl{text-align:center;font-size:.7rem;font-weight:700;color:var(--muted)}
+    .wdl.sun{color:#e53935}.wdl.sat{color:#1565c0}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:4px;gap:2px}
+    .cday{min-height:60px;border-radius:9px;padding:4px 4px;cursor:pointer;
+      transition:background .15s;position:relative}
+    .cday:hover{background:rgba(255,180,0,.13)}
+    .cday.other{opacity:.22;pointer-events:none}
+    .cday.sel{background:rgba(255,180,0,.2);outline:2px solid rgba(255,140,0,.4)}
+    .cday.tod .dnum{background:linear-gradient(135deg,var(--or),var(--yl));color:#fff}
+    .dnum{font-size:.76rem;font-weight:700;width:22px;height:22px;
+      display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:2px}
+    .cday.sun .dnum{color:#e53935}.cday.sat .dnum{color:#1565c0}
+    .dots{display:flex;flex-wrap:wrap;gap:2px}
+    .dot{width:6px;height:6px;border-radius:50%}
+    .dh{background:#ff7043}.dw{background:#ffca28}.dl{background:#ffa726}
+    .ds{background:#ff8f00}.df{background:#aed581}.dr{background:#ff8c00;border:1.5px solid rgba(255,255,255,.6)}
+    .rec-mark{position:absolute;top:3px;right:3px;font-size:.48rem;
+      background:rgba(255,140,0,.14);color:var(--or);border-radius:3px;padding:1px 3px;font-weight:800}
+
+    /* CHART */
+    .chart-card{background:var(--card);border-radius:20px;margin-top:14px;
+      box-shadow:0 4px 20px rgba(255,140,0,.1);border:1.5px solid var(--border);
+      padding:18px 20px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+    .circle-wrap{flex-shrink:0;text-align:center}
+    .circle-wrap p{font-size:.72rem;color:var(--muted);margin-top:4px;font-weight:700}
+    .bars-wrap{flex:1;min-width:200px}
+    .bars-title{font-size:.75rem;font-weight:800;color:var(--muted);margin-bottom:10px}
+    .bars{display:flex;gap:10px;align-items:flex-end;height:70px}
+    .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+    .bar-pct{font-size:.65rem;font-weight:700;color:var(--muted)}
+    .bar-bg{width:100%;background:#ffe0a0;border-radius:5px 5px 0 0;position:relative;overflow:hidden;height:50px}
+    .bar-fill{position:absolute;bottom:0;left:0;right:0;border-radius:5px 5px 0 0;
+      background:linear-gradient(180deg,var(--yl),var(--or));transition:height .6s}
+    .bar-lbl{font-size:.65rem;color:var(--muted);font-weight:700}
+    .bar-col.cur .bar-lbl{color:var(--or)}
+
+    /* DAY PANEL */
+    .dpanel{display:none;margin-top:10px}
+    .dpanel.on{display:block}
+    .dpanel-card{background:#fff;border-radius:16px;border:2px solid rgba(255,180,0,.35);
+      box-shadow:0 4px 18px rgba(255,140,0,.14);overflow:hidden}
+    .dpanel-hd{background:linear-gradient(90deg,rgba(255,140,0,.1),rgba(255,215,0,.08));
+      padding:10px 15px;display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid rgba(255,180,50,.2)}
+    .dpanel-title{font-size:.97rem;font-weight:800;color:var(--or)}
+    .xbtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:2px 6px}
+    .dpanel-body{padding:11px 14px 14px}
+    .sec-lbl{font-size:.75rem;color:var(--muted);font-weight:800;margin-bottom:6px;margin-top:4px}
+
+    /* TASK SECTIONS */
+    .secs{max-width:860px;margin:14px auto 0;padding:0 13px;display:flex;flex-direction:column;gap:12px}
+    .wcard{background:var(--card);border-radius:20px;
+      box-shadow:0 3px 16px rgba(255,140,0,.09);border:1.5px solid var(--border);overflow:hidden}
+    .wcard.co{border-color:rgba(255,120,0,.4)}
+    .whd{padding:10px 16px;display:flex;align-items:center;gap:8px;
+      background:linear-gradient(90deg,var(--or),var(--yl))}
+    .whd.cohd{background:linear-gradient(90deg,#f57c00,#ff8c00)}
+    .wbadge{background:rgba(255,255,255,.25);color:#fff;font-size:.7rem;
+      font-weight:800;padding:2px 9px;border-radius:99px}
+    .wtitle{color:#fff;font-size:.88rem;font-weight:700}
+    .tlist{padding:10px 13px;display:flex;flex-direction:column;gap:6px}
+
+    /* TASK ITEM */
+    .ti{display:flex;align-items:center;gap:8px;padding:8px 12px;
+      background:#fff9ee;border-radius:9px;border:1.5px solid #ffe08a;
+      cursor:pointer;transition:all .17s;user-select:none}
+    .ti:hover{background:#fff3cc;border-color:#ffcc00;transform:translateX(2px)}
+    .ti.done{background:#f5f5f5;border-color:#ddd;opacity:.5}
+    .ti.done .ttxt{text-decoration:line-through;color:#999}
+    .ti.car{border-left:3px solid #f57c00}
+    .ti.rec-ti{border-left:3px solid rgba(255,140,0,.45)}
+    .prio-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .ph{background:#ff5252}.pm{background:#ffb300}.pl{background:#bdbdbd}
+    .cb{width:18px;height:18px;border-radius:5px;border:2px solid #ffb300;
+      background:#fff;display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;transition:all .17s}
+    .ti.done .cb{background:var(--or);border-color:var(--or)}
+    .cb::after{content:'';width:8px;height:5px;border-left:2px solid #fff;
+      border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);opacity:0;transition:opacity .15s}
+    .ti.done .cb::after{opacity:1}
+    .ttxt{flex:1;font-size:.87rem;color:var(--txt);line-height:1.4}
+    .dlbl{font-size:.67rem;color:var(--muted);white-space:nowrap}
+    .tag{font-size:.64rem;padding:2px 6px;border-radius:99px;font-weight:700;white-space:nowrap}
+    .th{background:#ffe0b2;color:#e65100}.tw{background:#fff9c4;color:#f57f17}
+    .tl{background:#ffe082;color:#ff6f00}.ts{background:#ffcc80;color:#bf360c}
+    .tf{background:#f1f8e9;color:#558b2f}
+    .pbadge{font-size:.62rem;padding:1px 5px;border-radius:5px;font-weight:800;white-space:nowrap}
+    .pbadge.ph{background:#ffebee;color:#c62828}.pbadge.pm{background:#fff8e1;color:#e65100}
+    .pbadge.pl{background:#f5f5f5;color:#757575}
+    .delbtn{background:none;border:none;color:#ccc;cursor:pointer;
+      font-size:.82rem;padding:0 2px;flex-shrink:0;transition:color .15s}
+    .delbtn:hover{color:#ef5350}
+
+    /* ADD ROW */
+    .arow{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+    .ainput{flex:1;min-width:120px;padding:7px 10px;border-radius:8px;border:1.5px solid #ffb300;
+      background:#fffef5;font-size:.85rem;font-family:inherit;color:var(--txt);outline:none}
+    .ainput:focus{border-color:var(--or);box-shadow:0 0 0 2px rgba(255,140,0,.1)}
+    .asel{padding:7px 8px;border-radius:8px;border:1.5px solid #ffb300;
+      background:#fffef5;font-size:.78rem;font-family:inherit;color:var(--txt);outline:none;cursor:pointer}
+    .abtn{background:linear-gradient(135deg,var(--or),var(--yl));color:#fff;border:none;
+      border-radius:8px;padding:7px 12px;font-size:.85rem;cursor:pointer;
+      font-family:inherit;font-weight:700;white-space:nowrap}
+    .togbtn{display:flex;align-items:center;gap:5px;padding:7px 12px;background:none;
+      border:1.5px dashed #ffb300;border-radius:8px;color:#ffb300;font-size:.85rem;
+      cursor:pointer;width:100%;font-family:inherit;transition:all .17s}
+    .togbtn:hover{background:#fff9ee;border-color:var(--or);color:var(--or)}
+
+    /* MODAL */
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+      z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+    .overlay.on{display:flex}
+    .modal{background:#fff;border-radius:20px;max-width:500px;width:100%;
+      margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.22)}
+    .mhd{padding:15px 17px;display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid #f0f0f0;border-radius:20px 20px 0 0;position:sticky;top:0;background:#fff}
+    .mtitle{font-size:1rem;font-weight:900;
+      background:linear-gradient(90deg,var(--or),var(--yl));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .mbody{padding:14px 17px 18px}
+    .ritem{display:flex;align-items:center;gap:8px;padding:8px 10px;
+      background:#fff9ee;border-radius:9px;border:1.5px solid #ffe08a;margin-bottom:6px}
+    .rdaybadge{background:linear-gradient(135deg,var(--or),var(--yl));color:#fff;
+      font-weight:900;font-size:.8rem;width:32px;height:32px;border-radius:8px;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .rtxt{flex:1;font-size:.87rem}
+    .addrf{background:#fff9ee;border-radius:11px;padding:12px;border:1.5px dashed #ffb300;margin-top:10px}
+    .addrf h4{font-size:.8rem;color:var(--muted);margin-bottom:8px}
+    .frow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .dayinput{width:60px;padding:7px;border-radius:7px;border:1.5px solid #ffb300;
+      font-size:.85rem;font-family:inherit;color:var(--txt);outline:none;text-align:center}
+    .empty{text-align:center;padding:14px;color:var(--muted);font-size:.87rem}
+
+    /* SYNC MODAL */
+    .sync-code-box{background:#fff8e1;border:1.5px solid #ffe082;border-radius:10px;
+      padding:12px 14px;font-family:monospace;font-size:1.1rem;font-weight:700;
+      color:var(--or);letter-spacing:.1em;text-align:center;word-break:break-all;cursor:pointer;
+      transition:background .2s}
+    .sync-code-box:hover{background:#fff3c4}
+    .setup-steps{background:#fff9ee;border-radius:10px;padding:13px;margin:12px 0;
+      border:1.5px solid #ffe082;font-size:.83rem;line-height:1.8;color:var(--txt)}
+    .setup-steps ol{padding-left:18px}
+    .setup-steps li{margin-bottom:4px}
+    .setup-steps code{background:#ffe082;padding:1px 5px;border-radius:4px;font-size:.8rem}
+    .url-input{width:100%;padding:9px 11px;border-radius:9px;border:1.5px solid #ffb300;
+      font-size:.85rem;font-family:monospace;color:var(--txt);outline:none;background:#fffef5}
+    .url-input:focus{border-color:var(--or);box-shadow:0 0 0 2px rgba(255,140,0,.1)}
+    .status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+      border-radius:99px;font-size:.78rem;font-weight:700}
+    .status-badge.ok{background:#e8f5e9;color:#2e7d32}
+    .status-badge.off{background:#f5f5f5;color:#757575}
+    .status-badge.err{background:#ffebee;color:#c62828}
+    #qrContainer{display:flex;justify-content:center;margin:10px 0}
+    .hint{font-size:.78rem;color:var(--muted);margin-top:6px}
+    .mlabel{font-size:.8rem;font-weight:700;color:var(--muted);margin:10px 0 5px}
+    .mrow{display:flex;gap:7px;align-items:center}
+
+    footer{text-align:center;margin-top:28px;font-size:.74rem;color:var(--muted);opacity:.6}
+    @media(max-width:500px){.hd-right{gap:5px}.chart-card{gap:12px}}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="hd-top">
+    <div class="mnav">
+      <button class="nbtn" id="prev">‹</button>
+      <h1 id="mTitle"></h1>
+      <button class="nbtn" id="next">›</button>
+    </div>
+    <div class="hd-right">
+      <button class="syncbtn" id="syncBtn"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">同期</span></button>
+      <button class="rbtn" id="rBtn">📅 固定</button>
+    </div>
+  </div>
+  <div class="prog-wrap">
+    <div class="prog-bg"><div class="prog-bar" id="pBar"></div></div>
+    <span class="prog-txt" id="pTxt">0 / 0 完了</span>
+  </div>
+</header>
+
+<!-- Calendar -->
+<div class="wrap">
+  <div class="cal-card">
+    <div class="cal-wdays">
+      <div class="wdl sun">日</div><div class="wdl">月</div><div class="wdl">火</div>
+      <div class="wdl">水</div><div class="wdl">木</div><div class="wdl">金</div>
+      <div class="wdl sat">土</div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <!-- Achievement Chart -->
+  <div class="chart-card" id="chartCard">
+    <div class="circle-wrap">
+      <svg id="circleChart" width="90" height="90" viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r="34" fill="none" stroke="#ffe082" stroke-width="10"/>
+        <circle id="circleArc" cx="45" cy="45" r="34" fill="none" stroke="url(#cgrad)"
+          stroke-width="10" stroke-linecap="round"
+          stroke-dasharray="0 213.6" transform="rotate(-90 45 45)"/>
+        <defs>
+          <linearGradient id="cgrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#ff8c00"/>
+            <stop offset="100%" style="stop-color:#ffd700"/>
+          </linearGradient>
+        </defs>
+        <text id="circleNum" x="45" y="49" text-anchor="middle"
+          font-size="15" font-weight="900" fill="#ff8c00">0%</text>
+      </svg>
+      <p>今月の達成率</p>
+    </div>
+    <div class="bars-wrap">
+      <div class="bars-title">週ごとの完了率</div>
+      <div class="bars" id="barsEl"></div>
+    </div>
+  </div>
+
+  <!-- Day Panel -->
+  <div class="dpanel" id="dpanel">
+    <div class="dpanel-card">
+      <div class="dpanel-hd">
+        <span class="dpanel-title" id="dpTitle"></span>
+        <button class="xbtn" id="dpClose">✕</button>
+      </div>
+      <div class="dpanel-body">
+        <div id="dpContent"></div>
+        <div class="arow" style="margin-top:9px">
+          <input class="ainput" id="dpInput" type="text" placeholder="タスクを追加...">
+          <select class="asel" id="dpTag">
+            <option value="life">生活</option><option value="work">仕事</option>
+            <option value="health">健康</option><option value="study">学習</option>
+            <option value="fun">趣味</option>
+          </select>
+          <select class="asel" id="dpPrio">
+            <option value="high">高</option><option value="mid" selected>中</option>
+            <option value="low">低</option>
+          </select>
+          <button class="abtn" id="dpAddBtn">追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="secs" id="secs"></div>
+
+<footer><p>🍊 日付クリックでタスク追加 ｜ 📅 固定タスクは毎月自動表示 ｜ 未完了は翌月へ繰り越し</p></footer>
+
+<!-- Recurring Modal -->
+<div class="overlay" id="rModal">
+  <div class="modal">
+    <div class="mhd"><span class="mtitle">📅 固定タスク管理</span><button class="xbtn" id="rClose">✕</button></div>
+    <div class="mbody">
+      <div id="rList"></div>
+      <div class="addrf">
+        <h4>＋ 新しい固定タスクを追加</h4>
+        <div class="frow">
+          <input class="dayinput" id="rDay" type="number" min="1" max="31" placeholder="日">
+          <span style="font-size:.82rem;color:var(--muted)">日</span>
+          <input class="ainput" id="rText" type="text" placeholder="タスク名..." style="flex:1;min-width:110px">
+          <select class="asel" id="rTag">
+            <option value="life">生活</option><option value="work">仕事</option>
+            <option value="health">健康</option><option value="study">学習</option>
+            <option value="fun">趣味</option>
+          </select>
+        </div>
+        <button class="abtn" id="rAddBtn" style="margin-top:8px;width:100%">追加する</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sync Modal -->
+<div class="overlay" id="syncModal">
+  <div class="modal">
+    <div class="mhd"><span class="mtitle">📱 スマホ同期設定</span><button class="xbtn" id="syncClose">✕</button></div>
+    <div class="mbody">
+      <div id="syncStatus" style="margin-bottom:12px"></div>
+
+      <div class="mlabel">① Firebase Database URL を入力</div>
+      <div class="setup-steps">
+        <ol>
+          <li><a href="https://console.firebase.google.com/" target="_blank" style="color:var(--or)">console.firebase.google.com</a> でプロジェクト作成</li>
+          <li>「Realtime Database」を作成（テストモード）</li>
+          <li>Database URL（<code>https://xxx-default-rtdb.firebaseio.com</code>）をコピー</li>
+          <li>下に貼り付けて「保存」</li>
+        </ol>
+      </div>
+      <div class="mrow">
+        <input class="url-input" id="dbUrlInput" type="text" placeholder="https://your-project-default-rtdb.firebaseio.com">
+        <button class="abtn" id="saveUrlBtn">保存</button>
+      </div>
+
+      <div id="syncCodeSection" style="display:none;margin-top:16px">
+        <div class="mlabel">② 同期コード（スマホで入力 or QRスキャン）</div>
+        <div class="sync-code-box" id="syncCodeBox" title="タップでコピー"></div>
+        <div class="hint">💡 タップするとコピーされます</div>
+        <div id="qrContainer"></div>
+        <div class="mlabel" style="margin-top:12px">スマホに同期コードを入力</div>
+        <div class="mrow">
+          <input class="ainput" id="codeInput" type="text" placeholder="同期コードを入力..." style="flex:1">
+          <button class="abtn" id="applyCodeBtn">適用</button>
+        </div>
+        <div class="hint">スマホでこのページを開き、同じ同期コードを入力すると自動で同期されます</div>
+        <button class="abtn" id="forceSyncBtn" style="width:100%;margin-top:10px">今すぐ同期</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── FIREBASE CONFIG ──────────────────────────────────────
+// Firebase Realtime Database URL (set via Sync modal UI)
+// Format: https://your-project-default-rtdb.firebaseio.com
+// ─────────────────────────────────────────────────────────
+
+const KEY = 'yarukoto_v3';
+const CONF_KEY = 'yarukoto_conf';
+
+function loadConf(){ try{return JSON.parse(localStorage.getItem(CONF_KEY))||{};}catch{return{};} }
+function saveConf(c){ localStorage.setItem(CONF_KEY,JSON.stringify(c)); }
+
+let conf = loadConf(); // { dbUrl, syncCode }
+
+// ── DATA ──
+function load(){
+  try{return JSON.parse(localStorage.getItem(KEY))||{months:{},rec:[],recDone:{}};}
+  catch{return{months:{},rec:[],recDone:{}};}
+}
+function save(){ localStorage.setItem(KEY,JSON.stringify(D)); }
+function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+
+let D = load();
+
+// ── STATE ──
+const now = new Date();
+let CY=now.getFullYear(), CM=now.getMonth()+1;
+let selDate=null;
+const todayStr=fmt(now.getFullYear(),now.getMonth()+1,now.getDate());
+
+// ── HELPERS ──
+function fmt(y,m,d){ return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function mkey(y,m){ return `${y}-${String(m).padStart(2,'0')}`; }
+function dim(y,m){ return new Date(y,m,0).getDate(); }
+function fdow(y,m){ return new Date(y,m-1,1).getDay(); }
+function mTasks(y,m){ const k=mkey(y,m); if(!D.months[k])D.months[k]=[]; return D.months[k]; }
+
+const WD=['日','月','火','水','木','金','土'];
+const TAGS={health:'健康',work:'仕事',life:'生活',study:'学習',fun:'趣味'};
+const DOTCLS={health:'dh',work:'dw',life:'dl',study:'ds',fun:'df'};
+const TAGCLS={health:'th',work:'tw',life:'tl',study:'ts',fun:'tf'};
+const PRIOCLS={high:'ph',mid:'pm',low:'pl'};
+const PRIOLBL={high:'高',mid:'中',low:'低'};
+const PRIOORD={high:0,mid:1,low:2};
+
+function fmtDate(ds){
+  const [y,m,d]=ds.split('-').map(Number);
+  return `${m}月${d}日（${WD[new Date(y,m-1,d).getDay()]}）`;
+}
+function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function weekRange(y,m,w){
+  const f=fdow(y,m),days=dim(y,m);
+  return {s:Math.max(1,(w-1)*7-f+1),e:Math.min(days,w*7-f)};
+}
+function numWeeks(y,m){ const f=fdow(y,m),d=dim(y,m); return Math.ceil((d+f)/7); }
+
+function carryover(){
+  const out=[];
+  for(const k of Object.keys(D.months)){
+    const [ky,km]=k.split('-').map(Number);
+    if(ky<CY||(ky===CY&&km<CM))
+      for(const t of D.months[k]) if(!t.done) out.push({...t,_sk:k});
+  }
+  return out;
+}
+
+function isRecDone(rid,y,m,d){ return (D.recDone[fmt(y,m,d)]||[]).includes(rid); }
+function toggleRecDoneData(rid,y,m,d){
+  const k=fmt(y,m,d); if(!D.recDone[k])D.recDone[k]=[];
+  const i=D.recDone[k].indexOf(rid);
+  if(i>=0)D.recDone[k].splice(i,1); else D.recDone[k].push(rid);
+}
+
+// ── SYNC (Firebase REST) ──
+let syncTimer=null;
+let syncState='off'; // off | pending | ok | err
+
+function setSyncState(s){
+  syncState=s;
+  const dot=document.getElementById('syncDot');
+  const lbl=document.getElementById('syncLbl');
+  dot.className='sync-dot '+s;
+  if(s==='ok') lbl.textContent='同期済';
+  else if(s==='pending') lbl.textContent='同期中…';
+  else if(s==='err') lbl.textContent='エラー';
+  else lbl.textContent='同期';
+}
+
+function syncUrl(){
+  if(!conf.dbUrl||!conf.syncCode) return null;
+  return `${conf.dbUrl.replace(/\/$/,'')}/sync/${conf.syncCode}.json`;
+}
+
+async function pullFromFirebase(){
+  const url=syncUrl(); if(!url) return;
+  try{
+    const r=await fetch(url);
+    if(!r.ok) throw new Error();
+    const remote=await r.json();
+    if(remote&&remote.months){ D=remote; save(); render(); setSyncState('ok'); }
+  }catch{ setSyncState('err'); }
+}
+
+async function pushToFirebase(){
+  const url=syncUrl(); if(!url) return;
+  setSyncState('pending');
+  try{
+    const r=await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(D)});
+    if(!r.ok) throw new Error();
+    setSyncState('ok');
+  }catch{ setSyncState('err'); }
+}
+
+function schedPush(){
+  if(!syncUrl()) return;
+  setSyncState('pending');
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(pushToFirebase,700);
+}
+
+function saveAndSync(){
+  save(); schedPush(); render();
+}
+
+// ── RENDER ──
+function render(){ renderHeader(); renderCal(); renderChart(); renderSecs(); updateProg(); if(selDate)renderDP(selDate); }
+function renderHeader(){ document.getElementById('mTitle').textContent=`${CY}年${CM}月`; }
+
+function renderCal(){
+  const grid=document.getElementById('calGrid'); grid.innerHTML='';
+  const f=fdow(CY,CM),days=dim(CY,CM),tasks=mTasks(CY,CM);
+  const byDate={};
+  for(const t of tasks){ if(!byDate[t.date])byDate[t.date]=[]; byDate[t.date].push(t); }
+  const recByDay={};
+  for(const r of D.rec){ if(!recByDay[r.day])recByDay[r.day]=[]; recByDay[r.day].push(r); }
+  for(let i=0;i<f;i++){ const b=document.createElement('div'); b.className='cday other'; grid.appendChild(b); }
+  for(let d=1;d<=days;d++){
+    const ds=fmt(CY,CM,d),dow=new Date(CY,CM-1,d).getDay();
+    const cell=document.createElement('div');
+    cell.className='cday'+(dow===0?' sun':dow===6?' sat':'')+(ds===todayStr?' tod':'')+(ds===selDate?' sel':'');
+    const dts=byDate[ds]||[],recs=recByDay[d]||[];
+    let h=`<div class="dnum">${d}</div><div class="dots">`;
+    for(const t of dts.slice(0,5)) h+=`<div class="dot ${DOTCLS[t.tag]||'dl'}" title="${escH(t.text)}"></div>`;
+    for(const r of recs.slice(0,2)) h+=`<div class="dot dr" title="🔁${escH(r.text)}"></div>`;
+    h+='</div>';
+    if(recs.length) h+=`<div class="rec-mark">🔁</div>`;
+    cell.innerHTML=h;
+    cell.addEventListener('click',()=>selectDate(ds));
+    grid.appendChild(cell);
+  }
+}
+
+function renderChart(){
+  const tasks=mTasks(CY,CM);
+  const nw=numWeeks(CY,CM);
+  const days=dim(CY,CM);
+  const todayD=CY===now.getFullYear()&&CM===now.getMonth()+1?now.getDate():days;
+  const curWeek=Math.floor((fdow(CY,CM)+todayD-1)/7)+1;
+
+  // Overall
+  let tot=tasks.length,done=tasks.filter(t=>t.done).length;
+  for(const r of D.rec){
+    if(r.day<=days){tot++;if(isRecDone(r.id,CY,CM,r.day))done++;}
+  }
+  const pct=tot?Math.round(done/tot*100):0;
+  const arc=Math.min(pct/100*213.6,213.6);
+  document.getElementById('circleArc').setAttribute('stroke-dasharray',`${arc} 213.6`);
+  document.getElementById('circleNum').textContent=pct+'%';
+
+  // Weekly bars
+  const barsEl=document.getElementById('barsEl'); barsEl.innerHTML='';
+  for(let w=1;w<=nw;w++){
+    const {s,e}=weekRange(CY,CM,w);
+    const wt=tasks.filter(t=>{const d=+t.date.split('-')[2];return d>=s&&d<=e;});
+    let wTot=wt.length,wDone=wt.filter(t=>t.done).length;
+    for(let d=s;d<=e;d++){
+      for(const r of D.rec){
+        if(r.day===d){wTot++;if(isRecDone(r.id,CY,CM,d))wDone++;}
+      }
+    }
+    const wp=wTot?Math.round(wDone/wTot*100):0;
+    const col=document.createElement('div');
+    col.className='bar-col'+(w===curWeek?' cur':'');
+    col.innerHTML=`<div class="bar-pct">${wTot?wp+'%':''}</div>
+      <div class="bar-bg"><div class="bar-fill" style="height:${wp}%"></div></div>
+      <div class="bar-lbl">W${w}</div>`;
+    barsEl.appendChild(col);
+  }
+}
+
+function selectDate(ds){
+  selDate=ds;
+  renderCal();
+  document.getElementById('dpanel').classList.add('on');
+  renderDP(ds);
+  document.getElementById('dpanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function renderDP(ds){
+  const [y,m,d]=ds.split('-').map(Number);
+  document.getElementById('dpTitle').textContent=fmtDate(ds);
+  const tasks=mTasks(y,m).filter(t=>t.date===ds)
+    .sort((a,b)=>PRIOORD[a.priority||'mid']-PRIOORD[b.priority||'mid']);
+  const recs=D.rec.filter(r=>r.day===d);
+  let h='';
+  if(recs.length){
+    h+=`<div class="sec-lbl">🔁 固定タスク</div>`;
+    for(const r of recs){
+      const done=isRecDone(r.id,y,m,d);
+      h+=tiHtml(r.id,r.text,r.tag,'mid',done,false,true,`data-rid="${r.id}" data-y="${y}" data-m="${m}" data-d="${d}"`);
+    }
+  }
+  if(tasks.length){
+    if(recs.length) h+=`<div class="sec-lbl" style="margin-top:9px">📝 この日のタスク</div>`;
+    for(const t of tasks)
+      h+=tiHtml(t.id,t.text,t.tag,t.priority||'mid',t.done,true,false,`data-tid="${t.id}" data-mk="${mkey(y,m)}"`);
+  }
+  if(!recs.length&&!tasks.length) h='<div class="empty">タスクがありません</div>';
+  const el=document.getElementById('dpContent'); el.innerHTML=h;
+  el.querySelectorAll('[data-rid]').forEach(el=>el.addEventListener('click',()=>{
+    toggleRecDoneData(el.dataset.rid,+el.dataset.y,+el.dataset.m,+el.dataset.d);
+    saveAndSync();
+  }));
+  el.querySelectorAll('[data-tid]').forEach(el=>el.addEventListener('click',e=>{
+    if(e.target.classList.contains('delbtn'))return;
+    toggleTask(el.dataset.tid,el.dataset.mk);
+  }));
+  el.querySelectorAll('.delbtn[data-del]').forEach(b=>b.addEventListener('click',()=>deleteTask(b.dataset.del,b.dataset.mk)));
+}
+
+function tiHtml(id,text,tag,prio,done,showDel,isRec,extra){
+  prio=prio||'mid';
+  const pc=PRIOCLS[prio],pl=PRIOLBL[prio];
+  const del=showDel?`<button class="delbtn" data-del="${id}" data-mk="" onclick="event.stopPropagation()">✕</button>`:'';
+  return `<div class="ti${done?' done':''}${isRec?' rec-ti':''}" ${extra} style="margin-bottom:5px;cursor:pointer">
+    <div class="prio-dot ${pc}" title="${pl}優先"></div>
+    <div class="cb"></div>
+    <span class="ttxt">${(isRec?'🔁 ':'') + escH(text)}</span>
+    <span class="tag ${TAGCLS[tag]||'tl'}">${TAGS[tag]||tag}</span>
+    <span class="pbadge ${pc}">${pl}</span>
+    ${del}</div>`;
+}
+
+function renderSecs(){
+  const c=document.getElementById('secs'); c.innerHTML='';
+  const co=carryover();
+  if(co.length) c.appendChild(makeCarryover(co));
+  const nw=numWeeks(CY,CM);
+  for(let w=1;w<=nw;w++) c.appendChild(makeWeek(w));
+}
+
+function makeCarryover(tasks){
+  const card=document.createElement('div'); card.className='wcard co';
+  card.innerHTML=`<div class="whd cohd"><span class="wbadge">繰り越し</span><span class="wtitle">⏪ 前月からの未完了タスク</span></div><div class="tlist"></div>`;
+  const list=card.querySelector('.tlist');
+  const sorted=[...tasks].sort((a,b)=>PRIOORD[a.priority||'mid']-PRIOORD[b.priority||'mid']);
+  for(const t of sorted){
+    const el=document.createElement('div');
+    el.className=`ti car${t.done?' done':''}`;
+    el.innerHTML=`<div class="prio-dot ${PRIOCLS[t.priority||'mid']}"></div><div class="cb"></div>
+      <span class="ttxt">${escH(t.text)}</span>
+      <span class="dlbl">${fmtDate(t.date)}</span>
+      <span class="tag ${TAGCLS[t.tag]||'tl'}">${TAGS[t.tag]||t.tag}</span>
+      <span class="pbadge ${PRIOCLS[t.priority||'mid']}">${PRIOLBL[t.priority||'mid']}</span>
+      <button class="delbtn">✕</button>`;
+    el.addEventListener('click',e=>{
+      if(e.target.classList.contains('delbtn'))return;
+      const src=D.months[t._sk]; const orig=src?.find(x=>x.id===t.id);
+      if(orig){orig.done=!orig.done;saveAndSync();}
+    });
+    el.querySelector('.delbtn').addEventListener('click',()=>{
+      if(D.months[t._sk])D.months[t._sk]=D.months[t._sk].filter(x=>x.id!==t.id);
+      saveAndSync();
+    });
+    list.appendChild(el);
+  }
+  return card;
+}
+
+function makeWeek(w){
+  const {s,e}=weekRange(CY,CM,w);
+  const sl=`${CM}月${s}日（${WD[new Date(CY,CM-1,s).getDay()]}）`;
+  const el2=`${CM}月${e}日（${WD[new Date(CY,CM-1,e).getDay()]}）`;
+  const card=document.createElement('div'); card.className='wcard';
+  card.innerHTML=`<div class="whd"><span class="wbadge">WEEK ${w}</span><span class="wtitle">${sl} 〜 ${el2}</span></div><div class="tlist"></div>`;
+  const list=card.querySelector('.tlist');
+
+  // Recurring
+  for(let d=s;d<=e;d++){
+    for(const r of D.rec.filter(x=>x.day===d)){
+      const done=isRecDone(r.id,CY,CM,d);
+      const el=document.createElement('div');
+      el.className=`ti rec-ti${done?' done':''}`;
+      el.innerHTML=`<div class="prio-dot pm"></div><div class="cb"></div>
+        <span class="ttxt">🔁 ${escH(r.text)}</span>
+        <span class="dlbl">${CM}月${d}日</span>
+        <span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span>`;
+      el.addEventListener('click',()=>{ toggleRecDoneData(r.id,CY,CM,d); saveAndSync(); });
+      list.appendChild(el);
+    }
+  }
+
+  // Tasks
+  const wts=mTasks(CY,CM).filter(t=>{const d=+t.date.split('-')[2];return d>=s&&d<=e;})
+    .sort((a,b)=>PRIOORD[a.priority||'mid']-PRIOORD[b.priority||'mid']);
+  for(const t of wts){
+    const el=makeTIEl(t,mkey(CY,CM));
+    list.appendChild(el);
+  }
+
+  // Add
+  const tog=document.createElement('button'); tog.className='togbtn'; tog.textContent='＋ タスクを追加';
+  const arow=document.createElement('div'); arow.className='arow'; arow.style.display='none';
+  arow.innerHTML=`<input class="ainput" type="text" placeholder="タスクを追加...">
+    <select class="asel">
+      <option value="life">生活</option><option value="work">仕事</option>
+      <option value="health">健康</option><option value="study">学習</option><option value="fun">趣味</option>
+    </select>
+    <select class="asel">
+      <option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option>
+    </select>
+    <button class="abtn">追加</button>`;
+  tog.addEventListener('click',()=>{ tog.style.display='none'; arow.style.display='flex'; arow.querySelector('input').focus(); });
+  const doAdd=()=>{
+    const inp=arow.querySelector('input'),sels=arow.querySelectorAll('select');
+    const text=inp.value.trim(); if(!text)return;
+    let td=s;
+    const n=new Date(); if(n.getFullYear()===CY&&n.getMonth()+1===CM){const nd=n.getDate();if(nd>=s&&nd<=e)td=nd;}
+    mTasks(CY,CM).push({id:uid(),text,tag:sels[0].value,priority:sels[1].value,date:fmt(CY,CM,td),done:false,carriedFrom:null});
+    saveAndSync();
+  };
+  arow.querySelector('.abtn').addEventListener('click',doAdd);
+  arow.querySelector('input').addEventListener('keydown',e=>{if(e.key==='Enter')doAdd();});
+  list.appendChild(tog); list.appendChild(arow);
+  return card;
+}
+
+function makeTIEl(t,mk){
+  const el=document.createElement('div');
+  const p=t.priority||'mid';
+  el.className=`ti${t.done?' done':''}`;
+  el.innerHTML=`<div class="prio-dot ${PRIOCLS[p]}"></div><div class="cb"></div>
+    <span class="ttxt">${escH(t.text)}</span>
+    <span class="dlbl">${fmtDate(t.date)}</span>
+    <span class="tag ${TAGCLS[t.tag]||'tl'}">${TAGS[t.tag]||t.tag}</span>
+    <span class="pbadge ${PRIOCLS[p]}">${PRIOLBL[p]}</span>
+    <button class="delbtn">✕</button>`;
+  el.addEventListener('click',e=>{ if(e.target.classList.contains('delbtn'))return; toggleTask(t.id,mk); });
+  el.querySelector('.delbtn').addEventListener('click',()=>deleteTask(t.id,mk));
+  return el;
+}
+
+// ── ACTIONS ──
+function toggleTask(id,mk){
+  const t=(D.months[mk]||[]).find(x=>x.id===id);
+  if(t){t.done=!t.done;saveAndSync();}
+}
+function deleteTask(id,mk){
+  if(D.months[mk])D.months[mk]=D.months[mk].filter(x=>x.id!==id);
+  saveAndSync();
+}
+
+function updateProg(){
+  const ts=mTasks(CY,CM),days=dim(CY,CM);
+  let tot=ts.length,done=ts.filter(t=>t.done).length;
+  for(const r of D.rec){if(r.day<=days){tot++;if(isRecDone(r.id,CY,CM,r.day))done++;}}
+  const pct=tot?done/tot*100:0;
+  document.getElementById('pBar').style.width=pct+'%';
+  document.getElementById('pTxt').textContent=`${done} / ${tot} 完了`;
+}
+
+// ── RECURRING MODAL ──
+function renderRModal(){
+  const list=document.getElementById('rList'); list.innerHTML='';
+  if(!D.rec.length){list.innerHTML='<div class="empty">固定タスクがありません</div>';return;}
+  [...D.rec].sort((a,b)=>a.day-b.day).forEach(r=>{
+    const el=document.createElement('div'); el.className='ritem';
+    el.innerHTML=`<div class="rdaybadge">${r.day}日</div>
+      <span class="rtxt">${escH(r.text)}</span>
+      <span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span>
+      <button class="delbtn">✕</button>`;
+    el.querySelector('.delbtn').addEventListener('click',()=>{
+      D.rec=D.rec.filter(x=>x.id!==r.id); saveAndSync(); renderRModal();
+    });
+    list.appendChild(el);
+  });
+}
+
+// ── SYNC MODAL ──
+function renderSyncModal(){
+  const hasDb=!!conf.dbUrl, hasCode=!!conf.syncCode;
+  document.getElementById('dbUrlInput').value=conf.dbUrl||'';
+  const statusEl=document.getElementById('syncStatus');
+  if(hasDb&&hasCode){
+    statusEl.innerHTML=`<span class="status-badge ok">✅ 同期設定済み</span>`;
+  } else {
+    statusEl.innerHTML=`<span class="status-badge off">🔌 未設定 — 下のURLを入力してください</span>`;
+  }
+  const sec=document.getElementById('syncCodeSection');
+  sec.style.display=hasDb?'block':'none';
+  if(hasDb){
+    if(!conf.syncCode){ conf.syncCode=uid(); saveConf(conf); }
+    document.getElementById('syncCodeBox').textContent=conf.syncCode;
+    document.getElementById('codeInput').value=conf.syncCode;
+    renderQR(conf.syncCode);
+  }
+}
+
+function renderQR(code){
+  const c=document.getElementById('qrContainer'); c.innerHTML='';
+  const canvas=document.createElement('canvas');
+  c.appendChild(canvas);
+  const size=140, s=4, margin=4;
+  // Simple QR placeholder - show as text if no library
+  const div=document.createElement('div');
+  div.style.cssText='background:#f5f5f5;border-radius:8px;padding:10px;text-align:center;font-size:.75rem;color:#999';
+  div.innerHTML=`<p style="margin-bottom:4px">同期コードをスマホで手入力:</p>
+    <code style="font-size:.85rem;color:var(--or);font-weight:700">${escH(code)}</code>`;
+  c.appendChild(div);
+}
+
+// ── EVENT LISTENERS ──
+document.getElementById('prev').addEventListener('click',()=>{
+  CM--;if(CM<1){CM=12;CY--;} selDate=null;document.getElementById('dpanel').classList.remove('on');render();
+});
+document.getElementById('next').addEventListener('click',()=>{
+  CM++;if(CM>12){CM=1;CY++;} selDate=null;document.getElementById('dpanel').classList.remove('on');render();
+});
+document.getElementById('dpClose').addEventListener('click',()=>{
+  selDate=null;document.getElementById('dpanel').classList.remove('on');renderCal();
+});
+document.getElementById('rBtn').addEventListener('click',()=>{ renderRModal(); document.getElementById('rModal').classList.add('on'); });
+document.getElementById('rClose').addEventListener('click',()=>document.getElementById('rModal').classList.remove('on'));
+document.getElementById('rModal').addEventListener('click',e=>{ if(e.target===document.getElementById('rModal'))document.getElementById('rModal').classList.remove('on'); });
+document.getElementById('rAddBtn').addEventListener('click',()=>{
+  const day=+document.getElementById('rDay').value,text=document.getElementById('rText').value.trim(),tag=document.getElementById('rTag').value;
+  if(!day||day<1||day>31||!text)return;
+  D.rec.push({id:uid(),text,tag,day}); saveAndSync();
+  document.getElementById('rDay').value='';document.getElementById('rText').value='';renderRModal();
+});
+document.getElementById('rText').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('rAddBtn').click();});
+
+document.getElementById('dpAddBtn').addEventListener('click',()=>{
+  if(!selDate)return;
+  const text=document.getElementById('dpInput').value.trim(),tag=document.getElementById('dpTag').value,prio=document.getElementById('dpPrio').value;
+  if(!text)return;
+  const [y,m]=selDate.split('-').map(Number);
+  mTasks(y,m).push({id:uid(),text,tag,priority:prio,date:selDate,done:false,carriedFrom:null});
+  document.getElementById('dpInput').value=''; saveAndSync();
+});
+document.getElementById('dpInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('dpAddBtn').click();});
+
+// Sync modal
+document.getElementById('syncBtn').addEventListener('click',()=>{
+  renderSyncModal(); document.getElementById('syncModal').classList.add('on');
+});
+document.getElementById('syncClose').addEventListener('click',()=>document.getElementById('syncModal').classList.remove('on'));
+document.getElementById('syncModal').addEventListener('click',e=>{if(e.target===document.getElementById('syncModal'))document.getElementById('syncModal').classList.remove('on');});
+
+document.getElementById('saveUrlBtn').addEventListener('click',()=>{
+  const url=document.getElementById('dbUrlInput').value.trim();
+  if(!url){conf.dbUrl='';conf.syncCode='';saveConf(conf);renderSyncModal();return;}
+  conf.dbUrl=url; if(!conf.syncCode)conf.syncCode=uid(); saveConf(conf);
+  renderSyncModal(); setSyncState('pending'); pullFromFirebase();
+});
+
+document.getElementById('applyCodeBtn')?.addEventListener('click',()=>{
+  const code=document.getElementById('codeInput').value.trim(); if(!code)return;
+  conf.syncCode=code; saveConf(conf); renderSyncModal(); pullFromFirebase();
+});
+document.getElementById('forceSyncBtn')?.addEventListener('click',()=>{ pushToFirebase(); });
+document.getElementById('syncCodeBox')?.addEventListener('click',()=>{
+  navigator.clipboard.writeText(conf.syncCode||'').then(()=>{
+    document.getElementById('syncCodeBox').textContent='コピーしました！ ✓';
+    setTimeout(()=>{ document.getElementById('syncCodeBox').textContent=conf.syncCode; },1500);
+  });
+});
+
+// Pull on window focus
+window.addEventListener('focus',()=>{ if(conf.dbUrl&&conf.syncCode) pullFromFirebase(); });
+
+// ── SEED ──
+if(!Object.keys(D.months).length){
+  const days=dim(CY,CM);
+  const d=(n)=>fmt(CY,CM,Math.min(n,days));
+  D.months[mkey(CY,CM)]=[
+    {id:uid(),text:'今月の目標を書き出す',tag:'life',priority:'high',date:d(1),done:false,carriedFrom:null},
+    {id:uid(),text:'部屋の片付け・断捨離',tag:'life',priority:'mid',date:d(3),done:false,carriedFrom:null},
+    {id:uid(),text:'読みたかった本を1冊読む',tag:'fun',priority:'low',date:d(7),done:false,carriedFrom:null},
+    {id:uid(),text:'週3回 30分ウォーキング',tag:'health',priority:'high',date:d(10),done:false,carriedFrom:null},
+    {id:uid(),text:'仕事の月次レポート作成',tag:'work',priority:'high',date:d(15),done:false,carriedFrom:null},
+    {id:uid(),text:'資格・勉強の進捗確認',tag:'study',priority:'mid',date:d(20),done:false,carriedFrom:null},
+    {id:uid(),text:'今月の振り返り日記を書く',tag:'life',priority:'mid',date:d(days),done:false,carriedFrom:null},
+  ];
+  D.rec=[
+    {id:uid(),text:'家計簿・支出記録',tag:'life',day:1},
+    {id:uid(),text:'給与明細の確認',tag:'work',day:25},
+  ];
+  save();
+}
+
+// Init sync if already configured
+if(conf.dbUrl&&conf.syncCode){ setSyncState('pending'); pullFromFirebase(); }
+
+render();
+</script>
+</body>
+</html>
