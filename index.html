@@ -506,7 +506,7 @@ function renderCal(){
     for(const t of dts.slice(0,5)) h+=`<div class="dot ${DOTCLS[t.tag]||'dl'}" title="${escH(t.text)}"></div>`;
     for(const r of recs.slice(0,2)) h+=`<div class="dot dr" title="🔁${escH(r.text)}"></div>`;
     h+='</div>';
-    if(recs.length) h+=`<div class="rec-mark">🔁</div>`;
+    if(recs.length) h+=`<div class="rec-mark">📍</div>`;
     cell.innerHTML=h;
     cell.addEventListener('click',()=>selectDate(ds));
     grid.appendChild(cell);
