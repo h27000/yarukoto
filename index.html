@@ -174,8 +174,9 @@
     .ritem{display:flex;align-items:center;gap:8px;padding:8px 10px;
       background:#fff9ee;border-radius:9px;border:1.5px solid #ffe08a;margin-bottom:6px}
     .rdaybadge{background:linear-gradient(135deg,var(--or),var(--yl));color:#fff;
-      font-weight:900;font-size:.8rem;width:32px;height:32px;border-radius:8px;
-      display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      font-weight:900;font-size:.72rem;min-width:40px;height:32px;border-radius:8px;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+      padding:0 7px;white-space:nowrap;text-align:center}
     .rtxt{flex:1;font-size:.87rem}
     .addrf{background:#fff9ee;border-radius:11px;padding:12px;border:1.5px dashed #ffb300;margin-top:10px}
     .addrf h4{font-size:.8rem;color:var(--muted);margin-bottom:8px}
@@ -445,9 +446,25 @@
       <div id="rList"></div>
       <div class="addrf">
         <h4>＋ 新しい固定タスクを追加</h4>
-        <div class="frow">
+        <div class="frow" style="margin-bottom:7px">
+          <select class="asel" id="rType" onchange="updateRForm()">
+            <option value="monthly">毎月</option>
+            <option value="weekly">毎週</option>
+            <option value="daily">毎日</option>
+          </select>
           <input class="dayinput" id="rDay" type="number" min="1" max="31" placeholder="日">
-          <span style="font-size:.82rem;color:var(--muted)">日</span>
+          <span id="rDaySpan" style="font-size:.82rem;color:var(--muted)">日</span>
+          <select class="asel" id="rWeekday" style="display:none">
+            <option value="0">日曜</option>
+            <option value="1">月曜</option>
+            <option value="2">火曜</option>
+            <option value="3">水曜</option>
+            <option value="4">木曜</option>
+            <option value="5">金曜</option>
+            <option value="6">土曜</option>
+          </select>
+        </div>
+        <div class="frow">
           <input class="ainput" id="rText" type="text" placeholder="タスク名..." style="flex:1;min-width:110px">
           <select class="asel" id="rTag">
             <option value="life">生活</option><option value="work">仕事</option>
@@ -627,6 +644,30 @@ function carryover(){
 }
 
 function isRecDone(rid,y,m,d){ return ((D.recDone||{})[fmt(y,m,d)]||[]).includes(rid); }
+
+// 指定日に表示すべき固定タスクを返す（毎月・毎週・毎日に対応）
+function getRecsForDate(y,m,d){
+  const dow=new Date(y,m-1,d).getDay();
+  return D.rec.filter(r=>{
+    const type=r.type||'monthly';
+    if(type==='monthly') return r.day===d;
+    if(type==='weekly') return r.weekday===dow;
+    if(type==='daily') return true;
+    return false;
+  });
+}
+
+// 月内の固定タスクのtot/done集計
+function recStats(y,m){
+  const days=dim(y,m); let tot=0,done=0;
+  for(let d=1;d<=days;d++){
+    for(const r of getRecsForDate(y,m,d)){
+      tot++; if(isRecDone(r.id,y,m,d))done++;
+    }
+  }
+  return {tot,done};
+}
+
 function toggleRecDoneData(rid,y,m,d){
   const k=fmt(y,m,d); if(!D.recDone[k])D.recDone[k]=[];
   const i=D.recDone[k].indexOf(rid);
@@ -698,14 +739,12 @@ function renderCal(){
   const f=fdow(CY,CM),days=dim(CY,CM),tasks=mTasks(CY,CM);
   const byDate={};
   for(const t of tasks){ if(!byDate[t.date])byDate[t.date]=[]; byDate[t.date].push(t); }
-  const recByDay={};
-  for(const r of D.rec){ if(!recByDay[r.day])recByDay[r.day]=[]; recByDay[r.day].push(r); }
   for(let i=0;i<f;i++){ const b=document.createElement('div'); b.className='cday other'; grid.appendChild(b); }
   for(let d=1;d<=days;d++){
     const ds=fmt(CY,CM,d),dow=new Date(CY,CM-1,d).getDay();
     const cell=document.createElement('div');
     cell.className='cday'+(dow===0?' sun':dow===6?' sat':'')+(ds===todayStr?' tod':'')+(ds===selDate?' sel':'');
-    const dts=byDate[ds]||[],recs=recByDay[d]||[];
+    const dts=byDate[ds]||[],recs=getRecsForDate(CY,CM,d);
     let h=`<div class="dnum">${d}</div><div class="dots">`;
     for(const t of dts.slice(0,5)) h+=`<div class="dot ${DOTCLS[t.tag]||'dl'}" title="${escH(t.text)}"></div>`;
     for(const r of recs.slice(0,2)) h+=`<div class="dot dr" title="🔁${escH(r.text)}"></div>`;
@@ -718,9 +757,9 @@ function renderCal(){
 }
 
 function renderChart(){
-  const tasks=mTasks(CY,CM), days=dim(CY,CM);
+  const tasks=mTasks(CY,CM);
   let tot=tasks.length, done=tasks.filter(t=>t.done).length;
-  for(const r of D.rec){ if(r.day<=days){tot++;if(isRecDone(r.id,CY,CM,r.day))done++;} }
+  const rs=recStats(CY,CM); tot+=rs.tot; done+=rs.done;
   const pct=tot?Math.round(done/tot*100):0;
   const arc=Math.min(pct/100*213.6,213.6);
   document.getElementById('circleArc').setAttribute('stroke-dasharray',`${arc} 213.6`);
@@ -741,7 +780,7 @@ function renderDP(ds){
   document.getElementById('dpTitle').textContent=fmtDate(ds);
   const tasks=mTasks(y,m).filter(t=>t.date===ds)
     .sort((a,b)=>PRIOORD[a.priority||'mid']-PRIOORD[b.priority||'mid']);
-  const recs=D.rec.filter(r=>r.day===d);
+  const recs=getRecsForDate(y,m,d);
   const cont=document.getElementById('dpContent'); cont.innerHTML='';
 
   if(recs.length){
@@ -807,10 +846,18 @@ function makeAllTasks(){
   const mk=mkey(CY,CM);
   const allItems=[];
 
-  // 固定タスク
-  for(const r of D.rec){
-    if(r.day>=1&&r.day<=days){
-      allItems.push({type:'rec',r,d:r.day,sortKey:fmt(CY,CM,r.day)+'_0'});
+  // 固定タスク（毎月・毎週・毎日対応）
+  const shownDaily=new Set();
+  for(let d=1;d<=days;d++){
+    for(const r of getRecsForDate(CY,CM,d)){
+      const type=r.type||'monthly';
+      if(type==='daily'){
+        if(shownDaily.has(r.id))continue; // 毎日は1回だけ表示
+        shownDaily.add(r.id);
+        allItems.push({type:'rec',r,d:new Date().getDate(),sortKey:'0000-00-00_0',isDaily:true});
+      } else {
+        allItems.push({type:'rec',r,d,sortKey:fmt(CY,CM,d)+'_0'});
+      }
     }
   }
   // 通常タスク
@@ -821,15 +868,17 @@ function makeAllTasks(){
 
   for(const item of allItems){
     if(item.type==='rec'){
-      const {r,d}=item;
+      const {r,d,isDaily}=item;
+      const type=r.type||'monthly';
       const done=isRecDone(r.id,CY,CM,d);
+      const dateLbl=type==='daily'?'毎日':type==='weekly'?`毎週${WD[r.weekday||0]}`:`${CM}月${d}日`;
       const el=document.createElement('div');
       el.className=`ti rec-ti${done?' done':''}`;
       el.innerHTML=`<div class="prio-dot pm" style="margin-top:4px"></div><div class="cb" style="margin-top:1px;flex-shrink:0"></div>
         <div class="ti-main">
           <span class="ttxt">📍 ${escH(r.text)}</span>
           <div class="ti-sub">
-            <span class="dlbl">${CM}月${d}日</span>
+            <span class="dlbl">${dateLbl}</span>
             <span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span>
           </div>
         </div>`;
@@ -1054,21 +1103,33 @@ function deleteTask(id,mk){
 }
 
 function updateProg(){
-  const ts=mTasks(CY,CM),days=dim(CY,CM);
+  const ts=mTasks(CY,CM);
   let tot=ts.length,done=ts.filter(t=>t.done).length;
-  for(const r of D.rec){if(r.day<=days){tot++;if(isRecDone(r.id,CY,CM,r.day))done++;}}
+  const rs=recStats(CY,CM); tot+=rs.tot; done+=rs.done;
   const pct=tot?done/tot*100:0;
   document.getElementById('pBar').style.width=pct+'%';
   document.getElementById('pTxt').textContent=`${done} / ${tot} 完了`;
 }
 
 // ── RECURRING MODAL ──
+function recBadgeText(r){
+  const type=r.type||'monthly';
+  if(type==='daily') return '毎日';
+  if(type==='weekly') return `毎週${WD[r.weekday||0]}`;
+  return `${r.day}日`;
+}
+function recSortKey(r){
+  const type=r.type||'monthly';
+  if(type==='daily') return '0';
+  if(type==='weekly') return '1_'+(r.weekday||0);
+  return '2_'+String(r.day).padStart(2,'0');
+}
 function renderRModal(){
   const list=document.getElementById('rList'); list.innerHTML='';
   if(!D.rec.length){list.innerHTML='<div class="empty">固定タスクがありません</div>';return;}
-  [...D.rec].sort((a,b)=>a.day-b.day).forEach(r=>{
+  [...D.rec].sort((a,b)=>recSortKey(a)<recSortKey(b)?-1:1).forEach(r=>{
     const el=document.createElement('div'); el.className='ritem';
-    el.innerHTML=`<div class="rdaybadge">${r.day}日</div>
+    el.innerHTML=`<div class="rdaybadge">${recBadgeText(r)}</div>
       <span class="rtxt">${escH(r.text)}</span>
       <span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span>
       <button class="delbtn">✕</button>`;
@@ -1151,11 +1212,35 @@ document.getElementById('dpClose').addEventListener('click',()=>{
 document.getElementById('rBtn').addEventListener('click',()=>{ renderRModal(); document.getElementById('rModal').classList.add('on'); });
 document.getElementById('rClose').addEventListener('click',()=>document.getElementById('rModal').classList.remove('on'));
 document.getElementById('rModal').addEventListener('click',e=>{ if(e.target===document.getElementById('rModal'))document.getElementById('rModal').classList.remove('on'); });
+function updateRForm(){
+  const type=document.getElementById('rType').value;
+  const dayEl=document.getElementById('rDay');
+  const daySpan=document.getElementById('rDaySpan');
+  const wdEl=document.getElementById('rWeekday');
+  if(type==='monthly'){
+    dayEl.style.display=''; daySpan.style.display=''; wdEl.style.display='none';
+  } else if(type==='weekly'){
+    dayEl.style.display='none'; daySpan.style.display='none'; wdEl.style.display='';
+  } else { // daily
+    dayEl.style.display='none'; daySpan.style.display='none'; wdEl.style.display='none';
+  }
+}
 document.getElementById('rAddBtn').addEventListener('click',()=>{
-  const day=+document.getElementById('rDay').value,text=document.getElementById('rText').value.trim(),tag=document.getElementById('rTag').value;
-  if(!day||day<1||day>31||!text)return;
-  D.rec.push({id:uid(),text,tag,day}); saveAndSync();
-  document.getElementById('rDay').value='';document.getElementById('rText').value='';renderRModal();
+  const type=document.getElementById('rType').value;
+  const text=document.getElementById('rText').value.trim();
+  const tag=document.getElementById('rTag').value;
+  if(!text)return;
+  const rec={id:uid(),text,tag,type};
+  if(type==='monthly'){
+    const day=+document.getElementById('rDay').value;
+    if(!day||day<1||day>31)return;
+    rec.day=day;
+  } else if(type==='weekly'){
+    rec.weekday=+document.getElementById('rWeekday').value;
+  }
+  D.rec.push(rec); saveAndSync();
+  document.getElementById('rDay').value=''; document.getElementById('rText').value='';
+  renderRModal();
 });
 document.getElementById('rText').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('rAddBtn').click();});
 
