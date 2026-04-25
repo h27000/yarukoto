@@ -486,8 +486,8 @@
 
       <!-- タブ -->
       <div class="stab-nav">
-        <button class="stab on" id="tabBackup" onclick="switchTab('backup')">バックアップ</button>
-        <button class="stab" id="tabCategory" onclick="switchTab('category')">カテゴリ</button>
+        <button class="stab on" id="tabCategory" onclick="switchTab('category')">カテゴリ</button>
+        <button class="stab" id="tabBackup" onclick="switchTab('backup')">バックアップ</button>
         <button class="stab" id="tabSync" onclick="switchTab('sync')">同期</button>
       </div>
 
@@ -523,7 +523,7 @@
       </div>
 
       <!-- バックアップタブ -->
-      <div class="stab-panel on" id="panelBackup">
+      <div class="stab-panel" id="panelBackup">
         <div class="bk-row">
           <div class="bk-icon">🔄</div>
           <div class="bk-info">
@@ -554,7 +554,7 @@
       </div>
 
       <!-- カテゴリタブ -->
-      <div class="stab-panel" id="panelCategory">
+      <div class="stab-panel on" id="panelCategory">
         <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">カテゴリ名を自由に変更できます</p>
         <div id="catEditList"></div>
         <button class="emod-save" id="saveCatBtn" style="width:100%;margin-top:8px">保存する</button>
