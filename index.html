@@ -256,6 +256,22 @@
     .emod-cancel{padding:12px 18px;border-radius:12px;border:1.5px solid #ddd;
       background:none;color:#999;font-size:.9rem;cursor:pointer;font-family:inherit}
 
+    /* SETTINGS TABS */
+    .stab-nav{display:flex;border-bottom:2px solid #f0f0f0;margin-bottom:14px}
+    .stab{flex:1;padding:9px 4px;background:none;border:none;font-family:inherit;
+      font-size:.88rem;font-weight:700;color:#bbb;cursor:pointer;border-bottom:2px solid transparent;
+      margin-bottom:-2px;transition:all .18s}
+    .stab.on{color:var(--or);border-bottom-color:var(--or)}
+    .stab-panel{display:none}.stab-panel.on{display:block}
+    .bk-row{display:flex;align-items:center;gap:10px;padding:10px 12px;
+      background:#fff9ee;border-radius:10px;border:1.5px solid #ffe08a;margin-bottom:8px}
+    .bk-icon{font-size:1.5rem;flex-shrink:0}
+    .bk-info{flex:1;font-size:.83rem;color:var(--txt)}
+    .bk-info b{display:block;font-size:.9rem;margin-bottom:2px}
+    .bk-info small{color:var(--muted)}
+    .bk-link{color:var(--or);font-size:.8rem;font-weight:700;text-decoration:none}
+    .bk-link:hover{text-decoration:underline}
+
     footer{text-align:center;margin-top:28px;font-size:.74rem;color:var(--muted);opacity:.6}
     @media(max-width:500px){.hd-right{gap:5px}.chart-card{gap:12px}}
   </style>
@@ -270,7 +286,7 @@
       <button class="nbtn" id="next">›</button>
     </div>
     <div class="hd-right">
-      <button class="syncbtn" id="syncBtn"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">同期</span></button>
+      <button class="syncbtn" id="syncBtn"><span class="sync-dot off" id="syncDot"></span>⚙️ 設定</button>
       <button class="rbtn" id="rBtn">📍</button>
     </div>
   </div>
@@ -445,40 +461,80 @@
   </div>
 </div>
 
-<!-- Sync Modal -->
+<!-- Settings Modal -->
 <div class="overlay" id="syncModal">
   <div class="modal">
-    <div class="mhd"><span class="mtitle">📱 スマホ同期設定</span><button class="xbtn" id="syncClose">✕</button></div>
+    <div class="mhd"><span class="mtitle">⚙️ 設定</span><button class="xbtn" id="syncClose">✕</button></div>
     <div class="mbody">
-      <div id="syncStatus" style="margin-bottom:12px"></div>
 
-      <div class="mlabel">① Firebase Database URL を入力</div>
-      <div class="setup-steps">
-        <ol>
-          <li><a href="https://console.firebase.google.com/" target="_blank" style="color:var(--or)">console.firebase.google.com</a> でプロジェクト作成</li>
-          <li>「Realtime Database」を作成（テストモード）</li>
-          <li>Database URL（<code>https://xxx-default-rtdb.firebaseio.com</code>）をコピー</li>
-          <li>下に貼り付けて「保存」</li>
-        </ol>
-      </div>
-      <div class="mrow">
-        <input class="url-input" id="dbUrlInput" type="text" placeholder="https://your-project-default-rtdb.firebaseio.com">
-        <button class="abtn" id="saveUrlBtn">保存</button>
+      <!-- タブ -->
+      <div class="stab-nav">
+        <button class="stab on" id="tabSync" onclick="switchTab('sync')">📱 同期</button>
+        <button class="stab" id="tabBackup" onclick="switchTab('backup')">💾 バックアップ</button>
       </div>
 
-      <div id="syncCodeSection" style="display:none;margin-top:16px">
-        <div class="mlabel">② 同期コード（スマホで入力 or QRスキャン）</div>
-        <div class="sync-code-box" id="syncCodeBox" title="タップでコピー"></div>
-        <div class="hint">💡 タップするとコピーされます</div>
-        <div id="qrContainer"></div>
-        <div class="mlabel" style="margin-top:12px">スマホに同期コードを入力</div>
-        <div class="mrow">
-          <input class="ainput" id="codeInput" type="text" placeholder="同期コードを入力..." style="flex:1">
-          <button class="abtn" id="applyCodeBtn">適用</button>
+      <!-- 同期タブ -->
+      <div class="stab-panel on" id="panelSync">
+        <div id="syncStatus" style="margin-bottom:12px"></div>
+        <div class="mlabel">① Firebase Database URL を入力</div>
+        <div class="setup-steps">
+          <ol>
+            <li><a href="https://console.firebase.google.com/" target="_blank" style="color:var(--or)">console.firebase.google.com</a> でプロジェクト作成</li>
+            <li>「Realtime Database」を作成（テストモード）</li>
+            <li>Database URL（<code>https://xxx-default-rtdb.firebaseio.com</code>）をコピー</li>
+            <li>下に貼り付けて「保存」</li>
+          </ol>
         </div>
-        <div class="hint">スマホでこのページを開き、同じ同期コードを入力すると自動で同期されます</div>
-        <button class="abtn" id="forceSyncBtn" style="width:100%;margin-top:10px">今すぐ同期</button>
+        <div class="mrow">
+          <input class="url-input" id="dbUrlInput" type="text" placeholder="https://your-project-default-rtdb.firebaseio.com">
+          <button class="abtn" id="saveUrlBtn">保存</button>
+        </div>
+        <div id="syncCodeSection" style="display:none;margin-top:16px">
+          <div class="mlabel">② 同期コード（スマホで入力）</div>
+          <div class="sync-code-box" id="syncCodeBox" title="タップでコピー"></div>
+          <div class="hint">💡 タップするとコピーされます</div>
+          <div id="qrContainer"></div>
+          <div class="mlabel" style="margin-top:12px">スマホに同期コードを入力</div>
+          <div class="mrow">
+            <input class="ainput" id="codeInput" type="text" placeholder="同期コードを入力..." style="flex:1">
+            <button class="abtn" id="applyCodeBtn">適用</button>
+          </div>
+          <div class="hint">スマホでこのページを開き、同じコードを入力すると自動同期されます</div>
+          <button class="abtn" id="forceSyncBtn" style="width:100%;margin-top:10px">今すぐ同期</button>
+        </div>
       </div>
+
+      <!-- バックアップタブ -->
+      <div class="stab-panel" id="panelBackup">
+        <div class="bk-row">
+          <div class="bk-icon">🔄</div>
+          <div class="bk-info">
+            <b>毎日自動バックアップ</b>
+            <small>毎日 0:00（日本時間）にFirebaseのデータをGitHubへ自動保存</small>
+          </div>
+        </div>
+        <div class="bk-row">
+          <div class="bk-icon">📁</div>
+          <div class="bk-info">
+            <b>保存場所</b>
+            <small>GitHubリポジトリの <code style="background:#ffe082;padding:1px 4px;border-radius:3px">backups/</code> フォルダ</small>
+          </div>
+        </div>
+        <div class="bk-row">
+          <div class="bk-icon">🗓️</div>
+          <div class="bk-info">
+            <b>保存期間</b>
+            <small>直近30日分を保持（古いものは自動削除）</small>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+          <a class="abtn" href="https://github.com/h27000/yarukoto/tree/main/backups" target="_blank"
+            style="text-decoration:none;font-size:.82rem;padding:8px 14px">📂 バックアップを見る</a>
+          <a class="abtn" href="https://github.com/h27000/yarukoto/actions/workflows/backup.yml" target="_blank"
+            style="text-decoration:none;font-size:.82rem;padding:8px 14px;background:linear-gradient(135deg,#78909c,#90a4ae)">⚡ 実行ログ</a>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -574,13 +630,14 @@ let syncState='off'; // off | pending | ok | err
 
 function setSyncState(s){
   syncState=s;
-  const dot=document.getElementById('syncDot');
-  const lbl=document.getElementById('syncLbl');
-  dot.className='sync-dot '+s;
-  if(s==='ok') lbl.textContent='同期済';
-  else if(s==='pending') lbl.textContent='同期中…';
-  else if(s==='err') lbl.textContent='エラー';
-  else lbl.textContent='同期';
+  document.getElementById('syncDot').className='sync-dot '+s;
+}
+
+function switchTab(name){
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.stab-panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('on');
+  document.getElementById('panel'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('on');
 }
 
 function syncUrl(){
