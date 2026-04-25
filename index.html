@@ -53,14 +53,14 @@
     .wdl{text-align:center;font-size:.7rem;font-weight:700;color:var(--muted)}
     .wdl.sun{color:#e53935}.wdl.sat{color:#1565c0}
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:4px;gap:2px}
-    .cday{min-height:60px;border-radius:9px;padding:4px 4px;cursor:pointer;
+    .cday{min-height:46px;border-radius:9px;padding:3px 3px;cursor:pointer;
       transition:background .15s;position:relative}
     .cday:hover{background:rgba(255,180,0,.13)}
     .cday.other{opacity:.22;pointer-events:none}
     .cday.sel{background:rgba(255,180,0,.2);outline:2px solid rgba(255,140,0,.4)}
     .cday.tod .dnum{background:linear-gradient(135deg,var(--or),var(--yl));color:#fff}
-    .dnum{font-size:.76rem;font-weight:700;width:22px;height:22px;
-      display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:2px}
+    .dnum{font-size:.7rem;font-weight:700;width:20px;height:20px;
+      display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:1px}
     .cday.sun .dnum{color:#e53935}.cday.sat .dnum{color:#1565c0}
     .dots{display:flex;flex-wrap:wrap;gap:2px}
     .dot{width:6px;height:6px;border-radius:50%}
@@ -286,7 +286,7 @@
       <button class="nbtn" id="next">›</button>
     </div>
     <div class="hd-right">
-      <button class="syncbtn" id="syncBtn"><span class="sync-dot off" id="syncDot"></span>⚙️ 設定</button>
+      <button class="syncbtn" id="syncBtn"><span class="sync-dot off" id="syncDot"></span>設定</button>
       <button class="rbtn" id="rBtn">📍</button>
     </div>
   </div>
@@ -377,16 +377,16 @@
       <label class="emod-label">🏷️ カテゴリ ／ ⚡ 優先度</label>
       <div class="emod-selrow">
         <select class="emod-sel" id="amodTag">
-          <option value="life">🏠 生活</option>
-          <option value="work">💼 仕事</option>
-          <option value="health">🏃 健康</option>
-          <option value="study">📚 学習</option>
-          <option value="fun">🎮 趣味</option>
+          <option value="life">生活</option>
+          <option value="work">仕事</option>
+          <option value="health">健康</option>
+          <option value="study">学習</option>
+          <option value="fun">趣味</option>
         </select>
         <select class="emod-sel" id="amodPrio">
-          <option value="high">🔴 高優先度</option>
-          <option value="mid" selected>🟡 中優先度</option>
-          <option value="low">⚪ 低優先度</option>
+          <option value="high">高優先度</option>
+          <option value="mid" selected>中優先度</option>
+          <option value="low">低優先度</option>
         </select>
       </div>
     </div>
@@ -417,16 +417,16 @@
       <label class="emod-label">🏷️ カテゴリ ／ ⚡ 優先度</label>
       <div class="emod-selrow">
         <select class="emod-sel" id="emodTag">
-          <option value="life">🏠 生活</option>
-          <option value="work">💼 仕事</option>
-          <option value="health">🏃 健康</option>
-          <option value="study">📚 学習</option>
-          <option value="fun">🎮 趣味</option>
+          <option value="life">生活</option>
+          <option value="work">仕事</option>
+          <option value="health">健康</option>
+          <option value="study">学習</option>
+          <option value="fun">趣味</option>
         </select>
         <select class="emod-sel" id="emodPrio">
-          <option value="high">🔴 高優先度</option>
-          <option value="mid">🟡 中優先度</option>
-          <option value="low">⚪ 低優先度</option>
+          <option value="high">高優先度</option>
+          <option value="mid">中優先度</option>
+          <option value="low">低優先度</option>
         </select>
       </div>
     </div>
@@ -469,8 +469,9 @@
 
       <!-- タブ -->
       <div class="stab-nav">
-        <button class="stab on" id="tabSync" onclick="switchTab('sync')">📱 同期</button>
-        <button class="stab" id="tabBackup" onclick="switchTab('backup')">💾 バックアップ</button>
+        <button class="stab on" id="tabSync" onclick="switchTab('sync')">同期</button>
+        <button class="stab" id="tabBackup" onclick="switchTab('backup')">バックアップ</button>
+        <button class="stab" id="tabCategory" onclick="switchTab('category')">カテゴリ</button>
       </div>
 
       <!-- 同期タブ -->
@@ -535,6 +536,13 @@
         </div>
       </div>
 
+      <!-- カテゴリタブ -->
+      <div class="stab-panel" id="panelCategory">
+        <p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">カテゴリ名を自由に変更できます</p>
+        <div id="catEditList"></div>
+        <button class="emod-save" id="saveCatBtn" style="width:100%;margin-top:8px">保存する</button>
+      </div>
+
     </div>
   </div>
 </div>
@@ -588,7 +596,8 @@ function fdow(y,m){ return new Date(y,m-1,1).getDay(); }
 function mTasks(y,m){ const k=mkey(y,m); if(!D.months[k])D.months[k]=[]; return D.months[k]; }
 
 const WD=['日','月','火','水','木','金','土'];
-const TAGS={health:'健康',work:'仕事',life:'生活',study:'学習',fun:'趣味'};
+const DEFAULT_TAGS={health:'健康',work:'仕事',life:'生活',study:'学習',fun:'趣味'};
+let TAGS={...DEFAULT_TAGS,...(conf.tags||{})};
 const DOTCLS={health:'dh',work:'dw',life:'dl',study:'ds',fun:'df'};
 const TAGCLS={health:'th',work:'tw',life:'tl',study:'ts',fun:'tf'};
 const PRIOCLS={high:'ph',mid:'pm',low:'pl'};
@@ -1088,7 +1097,34 @@ function renderSyncModal(){
     document.getElementById('codeInput').value=conf.syncCode;
     renderQR(conf.syncCode);
   }
+  renderCatEdit();
 }
+
+function renderCatEdit(){
+  const list=document.getElementById('catEditList'); list.innerHTML='';
+  Object.keys(DEFAULT_TAGS).forEach(key=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
+    row.innerHTML=`<span style="font-size:.78rem;color:var(--muted);width:36px;flex-shrink:0">${DEFAULT_TAGS[key]}</span>
+      <input class="emod-input" style="flex:1;padding:7px 10px" data-key="${key}"
+        type="text" value="${escH(TAGS[key])}" placeholder="${DEFAULT_TAGS[key]}">`;
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('saveCatBtn').addEventListener('click',()=>{
+  const inputs=document.querySelectorAll('#catEditList input[data-key]');
+  const newTags={};
+  inputs.forEach(inp=>{
+    const v=inp.value.trim();
+    newTags[inp.dataset.key]=v||DEFAULT_TAGS[inp.dataset.key];
+  });
+  conf.tags=newTags; saveConf(conf);
+  Object.assign(TAGS,newTags);
+  render();
+  document.getElementById('saveCatBtn').textContent='保存しました ✓';
+  setTimeout(()=>document.getElementById('saveCatBtn').textContent='保存する',1500);
+});
 
 function renderQR(code){
   const c=document.getElementById('qrContainer'); c.innerHTML='';
