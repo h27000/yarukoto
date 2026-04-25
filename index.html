@@ -101,7 +101,7 @@
     .tlist{padding:10px 13px;display:flex;flex-direction:column;gap:6px}
 
     /* TASK ITEM */
-    .ti{display:flex;align-items:center;gap:8px;padding:8px 12px;
+    .ti{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;
       background:#fff9ee;border-radius:9px;border:1.5px solid #ffe08a;
       cursor:pointer;transition:all .17s;user-select:none}
     .ti:hover{background:#fff3cc;border-color:#ffcc00;transform:translateX(2px)}
@@ -118,8 +118,11 @@
     .cb::after{content:'';width:8px;height:5px;border-left:2px solid #fff;
       border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px);opacity:0;transition:opacity .15s}
     .ti.done .cb::after{opacity:1}
-    .ttxt{flex:1;font-size:.87rem;color:var(--txt);line-height:1.4}
+    .ti-main{flex:1;min-width:0}
+    .ttxt{display:block;font-size:.87rem;color:var(--txt);line-height:1.4;word-break:break-word}
+    .ti-sub{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;align-items:center}
     .dlbl{font-size:.67rem;color:var(--muted);white-space:nowrap}
+    .ti-btns{display:flex;gap:2px;flex-shrink:0;margin-top:1px}
     .tag{font-size:.64rem;padding:2px 6px;border-radius:99px;font-weight:700;white-space:nowrap}
     .th{background:#ffe0b2;color:#e65100}.tw{background:#fff9c4;color:#f57f17}
     .tl{background:#ffe082;color:#ff6f00}.ts{background:#ffcc80;color:#bf360c}
@@ -747,13 +750,20 @@ function makeTIEl(t,mk){
   const el=document.createElement('div');
   const p=t.priority||'mid';
   el.className=`ti${t.done?' done':''}`;
-  el.innerHTML=`<div class="prio-dot ${PRIOCLS[p]}"></div><div class="cb"></div>
-    <span class="ttxt">${escH(t.text)}</span>
-    <span class="dlbl">${fmtDate(t.date)}</span>
-    <span class="tag ${TAGCLS[t.tag]||'tl'}">${TAGS[t.tag]||t.tag}</span>
-    <span class="pbadge ${PRIOCLS[p]}">${PRIOLBL[p]}</span>
-    <button class="editbtn" title="編集">✏️</button>
-    <button class="delbtn">✕</button>`;
+  el.innerHTML=`<div class="prio-dot ${PRIOCLS[p]}" style="margin-top:4px"></div>
+    <div class="cb" style="margin-top:1px;flex-shrink:0"></div>
+    <div class="ti-main">
+      <span class="ttxt">${escH(t.text)}</span>
+      <div class="ti-sub">
+        <span class="dlbl">${fmtDate(t.date)}</span>
+        <span class="tag ${TAGCLS[t.tag]||'tl'}">${TAGS[t.tag]||t.tag}</span>
+        <span class="pbadge ${PRIOCLS[p]}">${PRIOLBL[p]}</span>
+      </div>
+    </div>
+    <div class="ti-btns">
+      <button class="editbtn" title="編集">✏️</button>
+      <button class="delbtn">✕</button>
+    </div>`;
   el.addEventListener('click',e=>{
     if(e.target.classList.contains('delbtn')||e.target.classList.contains('editbtn'))return;
     toggleTask(t.id,mk);
@@ -764,29 +774,29 @@ function makeTIEl(t,mk){
 }
 
 function startEdit(el,t,mk){
-  const ttxt=el.querySelector('.ttxt');
-  const editbtn=el.querySelector('.editbtn');
-  const delbtn=el.querySelector('.delbtn');
-  ttxt.style.display='none';
-  editbtn.style.display='none';
-  delbtn.style.display='none';
+  const main=el.querySelector('.ti-main');
+  const btns=el.querySelector('.ti-btns');
+  main.style.display='none'; btns.style.display='none';
+
   const inp=document.createElement('input');
-  inp.className='edit-input';
-  inp.value=t.text;
+  inp.className='edit-input'; inp.value=t.text;
   const save=document.createElement('button');
   save.className='savebtn'; save.textContent='保存';
   const cancel=document.createElement('button');
   cancel.className='cancelbtn'; cancel.textContent='キャンセル';
-  el.insertBefore(cancel,delbtn.nextSibling);
-  el.insertBefore(save,cancel);
-  el.insertBefore(inp,save);
+
+  const row=document.createElement('div');
+  row.className='arow'; row.style.flex='1';
+  row.appendChild(inp); row.appendChild(save); row.appendChild(cancel);
+  el.appendChild(row);
   inp.focus(); inp.select();
+
   const doSave=()=>{
     const newText=inp.value.trim(); if(!newText)return;
     const task=(D.months[mk]||[]).find(x=>x.id===t.id);
     if(task){task.text=newText; saveAndSync();}
   };
-  const doCancel=()=>{ inp.remove(); save.remove(); cancel.remove(); ttxt.style.display=''; editbtn.style.display=''; delbtn.style.display=''; };
+  const doCancel=()=>{ row.remove(); main.style.display=''; btns.style.display=''; };
   save.addEventListener('click',doSave);
   cancel.addEventListener('click',doCancel);
   inp.addEventListener('keydown',e=>{ if(e.key==='Enter')doSave(); if(e.key==='Escape')doCancel(); });
