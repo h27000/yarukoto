@@ -552,9 +552,11 @@ function renderDP(ds){
       const el=document.createElement('div');
       el.className=`ti rec-ti${done?' done':''}`;
       el.style.marginBottom='6px';
-      el.innerHTML=`<div class="prio-dot pm"></div><div class="cb"></div>
-        <span class="ttxt">${escH(r.text)}</span>
-        <span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span>`;
+      el.innerHTML=`<div class="prio-dot pm" style="margin-top:4px"></div><div class="cb" style="margin-top:1px;flex-shrink:0"></div>
+        <div class="ti-main">
+          <span class="ttxt">${escH(r.text)}</span>
+          <div class="ti-sub"><span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span></div>
+        </div>`;
       el.addEventListener('click',()=>{ toggleRecDoneData(r.id,y,m,d); saveAndSync(); });
       cont.appendChild(el);
     }
@@ -623,10 +625,14 @@ function makeAllTasks(){
       const done=isRecDone(r.id,CY,CM,d);
       const el=document.createElement('div');
       el.className=`ti rec-ti${done?' done':''}`;
-      el.innerHTML=`<div class="prio-dot pm"></div><div class="cb"></div>
-        <span class="ttxt">📍 ${escH(r.text)}</span>
-        <span class="dlbl">${CM}月${d}日</span>
-        <span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span>`;
+      el.innerHTML=`<div class="prio-dot pm" style="margin-top:4px"></div><div class="cb" style="margin-top:1px;flex-shrink:0"></div>
+        <div class="ti-main">
+          <span class="ttxt">📍 ${escH(r.text)}</span>
+          <div class="ti-sub">
+            <span class="dlbl">${CM}月${d}日</span>
+            <span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span>
+          </div>
+        </div>`;
       el.addEventListener('click',()=>{ toggleRecDoneData(r.id,CY,CM,d); saveAndSync(); });
       list.appendChild(el);
     } else {
@@ -668,12 +674,16 @@ function makeCarryover(tasks){
   for(const t of sorted){
     const el=document.createElement('div');
     el.className=`ti car${t.done?' done':''}`;
-    el.innerHTML=`<div class="prio-dot ${PRIOCLS[t.priority||'mid']}"></div><div class="cb"></div>
-      <span class="ttxt">${escH(t.text)}</span>
-      <span class="dlbl">${fmtDate(t.date)}</span>
-      <span class="tag ${TAGCLS[t.tag]||'tl'}">${TAGS[t.tag]||t.tag}</span>
-      <span class="pbadge ${PRIOCLS[t.priority||'mid']}">${PRIOLBL[t.priority||'mid']}</span>
-      <button class="delbtn">✕</button>`;
+    el.innerHTML=`<div class="prio-dot ${PRIOCLS[t.priority||'mid']}" style="margin-top:4px"></div><div class="cb" style="margin-top:1px;flex-shrink:0"></div>
+      <div class="ti-main">
+        <span class="ttxt">${escH(t.text)}</span>
+        <div class="ti-sub">
+          <span class="dlbl">${fmtDate(t.date)}</span>
+          <span class="tag ${TAGCLS[t.tag]||'tl'}">${TAGS[t.tag]||t.tag}</span>
+          <span class="pbadge ${PRIOCLS[t.priority||'mid']}">${PRIOLBL[t.priority||'mid']}</span>
+        </div>
+      </div>
+      <div class="ti-btns"><button class="delbtn">✕</button></div>`;
     el.addEventListener('click',e=>{
       if(e.target.classList.contains('delbtn'))return;
       const src=D.months[t._sk]; const orig=src?.find(x=>x.id===t.id);
