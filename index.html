@@ -271,7 +271,7 @@
     </div>
     <div class="hd-right">
       <button class="syncbtn" id="syncBtn"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">同期</span></button>
-      <button class="rbtn" id="rBtn">固定タスク</button>
+      <button class="rbtn" id="rBtn">📍 固定</button>
     </div>
   </div>
   <div class="prog-wrap">
@@ -318,24 +318,6 @@
     <button class="qadd-togbtn" id="qaddTogBtn">
       <span class="plus">＋</span>タスクを追加
     </button>
-    <div class="qadd-form" id="qaddForm">
-      <div class="qadd-row1">
-        <input class="ainput" id="qaddInput" type="text" placeholder="タスクの内容..." style="flex:1;min-width:180px">
-        <input class="date-input" id="qaddDate" type="date">
-      </div>
-      <div class="qadd-row2">
-        <select class="asel" id="qaddTag">
-          <option value="life">🏠 生活</option><option value="work">💼 仕事</option>
-          <option value="health">🏃 健康</option><option value="study">📚 学習</option>
-          <option value="fun">🎮 趣味</option>
-        </select>
-        <select class="asel" id="qaddPrio">
-          <option value="high">🔴 高</option><option value="mid" selected>🟡 中</option>
-          <option value="low">⚪ 低</option>
-        </select>
-        <button class="abtn" id="qaddBtn" style="margin-left:auto">追加する</button>
-      </div>
-    </div>
   </div>
 
   <!-- Day Panel -->
@@ -347,18 +329,8 @@
       </div>
       <div class="dpanel-body">
         <div id="dpContent"></div>
-        <div class="arow" style="margin-top:9px">
-          <input class="ainput" id="dpInput" type="text" placeholder="タスクを追加...">
-          <select class="asel" id="dpTag">
-            <option value="life">生活</option><option value="work">仕事</option>
-            <option value="health">健康</option><option value="study">学習</option>
-            <option value="fun">趣味</option>
-          </select>
-          <select class="asel" id="dpPrio">
-            <option value="high">高</option><option value="mid" selected>中</option>
-            <option value="low">低</option>
-          </select>
-          <button class="abtn" id="dpAddBtn">追加</button>
+        <div style="margin-top:9px">
+          <button class="abtn" id="dpAddBtn" style="width:100%">＋ タスクを追加</button>
         </div>
       </div>
     </div>
@@ -368,6 +340,46 @@
 <div class="secs" id="secs"></div>
 
 <footer><p>🍊 日付クリックでタスク追加 ｜ 📅 固定タスクは毎月自動表示 ｜ 未完了は翌月へ繰り越し</p></footer>
+
+<!-- Add Task Modal -->
+<div class="emodal-backdrop" id="amodal">
+  <div class="emodal">
+    <div class="emodal-handle"></div>
+    <div class="emodal-hd">
+      <span class="emodal-title">＋ タスクを追加</span>
+      <button class="xbtn" id="amodalClose">✕</button>
+    </div>
+    <div class="emod-field">
+      <label class="emod-label">📝 タスクの内容</label>
+      <input class="emod-input" id="amodText" type="text" placeholder="やること...">
+    </div>
+    <div class="emod-field">
+      <label class="emod-label">📅 日付</label>
+      <input class="emod-input date-input" id="amodDate" type="date">
+    </div>
+    <div class="emod-field">
+      <label class="emod-label">🏷️ カテゴリ ／ ⚡ 優先度</label>
+      <div class="emod-selrow">
+        <select class="emod-sel" id="amodTag">
+          <option value="life">🏠 生活</option>
+          <option value="work">💼 仕事</option>
+          <option value="health">🏃 健康</option>
+          <option value="study">📚 学習</option>
+          <option value="fun">🎮 趣味</option>
+        </select>
+        <select class="emod-sel" id="amodPrio">
+          <option value="high">🔴 高優先度</option>
+          <option value="mid" selected>🟡 中優先度</option>
+          <option value="low">⚪ 低優先度</option>
+        </select>
+      </div>
+    </div>
+    <div class="emod-btnrow">
+      <button class="emod-cancel" id="amodalCancel">キャンセル</button>
+      <button class="emod-save" id="amodalSave">追加する</button>
+    </div>
+  </div>
+</div>
 
 <!-- Edit Task Modal -->
 <div class="emodal-backdrop" id="emodal">
@@ -1055,51 +1067,37 @@ document.getElementById('rAddBtn').addEventListener('click',()=>{
 });
 document.getElementById('rText').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('rAddBtn').click();});
 
-document.getElementById('dpAddBtn').addEventListener('click',()=>{
-  if(!selDate)return;
-  const text=document.getElementById('dpInput').value.trim(),tag=document.getElementById('dpTag').value,prio=document.getElementById('dpPrio').value;
-  if(!text)return;
-  const [y,m]=selDate.split('-').map(Number);
-  mTasks(y,m).push({id:uid(),text,tag,priority:prio,date:selDate,done:false,carriedFrom:null});
-  document.getElementById('dpInput').value=''; saveAndSync();
-});
-document.getElementById('dpInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('dpAddBtn').click();});
+// ── ADD MODAL ──
+function openAddModal(presetDate){
+  const n=new Date();
+  const todayStr=fmt(n.getFullYear(),n.getMonth()+1,n.getDate());
+  document.getElementById('amodText').value='';
+  document.getElementById('amodDate').value=presetDate||
+    (n.getFullYear()===CY&&n.getMonth()+1===CM?todayStr:fmt(CY,CM,1));
+  document.getElementById('amodTag').value='life';
+  document.getElementById('amodPrio').value='mid';
+  document.getElementById('amodal').classList.add('on');
+  setTimeout(()=>document.getElementById('amodText').focus(),80);
+}
+function closeAddModal(){ document.getElementById('amodal').classList.remove('on'); }
+function saveAddModal(){
+  const text=document.getElementById('amodText').value.trim(); if(!text)return;
+  const ds=document.getElementById('amodDate').value||fmt(CY,CM,1);
+  const [y,m]=ds.split('-').map(Number);
+  mTasks(y,m).push({id:uid(),text,
+    tag:document.getElementById('amodTag').value,
+    priority:document.getElementById('amodPrio').value,
+    date:ds,done:false,carriedFrom:null});
+  saveAndSync(); closeAddModal();
+}
+document.getElementById('amodalSave').addEventListener('click',saveAddModal);
+document.getElementById('amodalCancel').addEventListener('click',closeAddModal);
+document.getElementById('amodalClose').addEventListener('click',closeAddModal);
+document.getElementById('amodal').addEventListener('click',e=>{ if(e.target===document.getElementById('amodal'))closeAddModal(); });
+document.getElementById('amodText').addEventListener('keydown',e=>{ if(e.key==='Enter')saveAddModal(); if(e.key==='Escape')closeAddModal(); });
 
-// Quick Add
-(function(){
-  const togBtn=document.getElementById('qaddTogBtn');
-  const form=document.getElementById('qaddForm');
-  const inp=document.getElementById('qaddInput');
-  const dateEl=document.getElementById('qaddDate');
-  const tagEl=document.getElementById('qaddTag');
-  const prioEl=document.getElementById('qaddPrio');
-  const addBtn=document.getElementById('qaddBtn');
-
-  function setDefaultDate(){
-    const n=new Date();
-    const y=n.getFullYear(),m=n.getMonth()+1,d=n.getDate();
-    if(y===CY&&m===CM) dateEl.value=fmt(y,m,d);
-    else dateEl.value=fmt(CY,CM,1);
-  }
-
-  togBtn.addEventListener('click',()=>{
-    const open=form.classList.toggle('on');
-    togBtn.querySelector('.plus').textContent=open?'−':'＋';
-    if(open){ setDefaultDate(); inp.focus(); }
-  });
-
-  function doAdd(){
-    const text=inp.value.trim(); if(!text)return;
-    const ds=dateEl.value||fmt(CY,CM,1);
-    const [y,m]=ds.split('-').map(Number);
-    mTasks(y,m).push({id:uid(),text,tag:tagEl.value,priority:prioEl.value,date:ds,done:false,carriedFrom:null});
-    inp.value=''; setDefaultDate(); inp.focus();
-    saveAndSync();
-  }
-
-  addBtn.addEventListener('click',doAdd);
-  inp.addEventListener('keydown',e=>{ if(e.key==='Enter')doAdd(); });
-})();
+document.getElementById('qaddTogBtn').addEventListener('click',()=>openAddModal(null));
+document.getElementById('dpAddBtn').addEventListener('click',()=>openAddModal(selDate||null));
 
 // Sync modal
 document.getElementById('syncBtn').addEventListener('click',()=>{
