@@ -226,6 +226,36 @@
       background:#fffef5;font-size:.8rem;font-family:inherit;color:var(--txt);outline:none;cursor:pointer}
     .date-input:focus{border-color:var(--or);box-shadow:0 0 0 2px rgba(255,140,0,.1)}
 
+    /* EDIT MODAL */
+    .emodal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+      z-index:300;align-items:flex-end;justify-content:center;padding:0}
+    .emodal-backdrop.on{display:flex}
+    .emodal{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:500px;
+      padding:20px 20px 32px;box-shadow:0 -8px 40px rgba(0,0,0,.18);
+      animation:slideUp .22s ease-out}
+    @keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .emodal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .emodal-title{font-size:1rem;font-weight:900;
+      background:linear-gradient(90deg,var(--or),var(--yl));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .emodal-handle{width:36px;height:4px;background:#e0e0e0;border-radius:2px;margin:0 auto 14px}
+    .emod-field{margin-bottom:12px}
+    .emod-label{font-size:.75rem;font-weight:800;color:var(--muted);margin-bottom:4px;display:block}
+    .emod-input{width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid #ffb300;
+      background:#fffef5;font-size:.9rem;font-family:inherit;color:var(--txt);outline:none}
+    .emod-input:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(255,140,0,.12)}
+    .emod-selrow{display:flex;gap:8px}
+    .emod-sel{flex:1;padding:9px 8px;border-radius:10px;border:1.5px solid #ffb300;
+      background:#fffef5;font-size:.85rem;font-family:inherit;color:var(--txt);outline:none;cursor:pointer}
+    .emod-sel:focus{border-color:var(--or)}
+    .emod-btnrow{display:flex;gap:8px;margin-top:16px}
+    .emod-save{flex:1;padding:12px;border-radius:12px;border:none;cursor:pointer;
+      background:linear-gradient(135deg,var(--or),var(--yl));color:#fff;
+      font-size:.95rem;font-weight:900;font-family:inherit;transition:opacity .15s}
+    .emod-save:hover{opacity:.88}
+    .emod-cancel{padding:12px 18px;border-radius:12px;border:1.5px solid #ddd;
+      background:none;color:#999;font-size:.9rem;cursor:pointer;font-family:inherit}
+
     footer{text-align:center;margin-top:28px;font-size:.74rem;color:var(--muted);opacity:.6}
     @media(max-width:500px){.hd-right{gap:5px}.chart-card{gap:12px}}
   </style>
@@ -338,6 +368,46 @@
 <div class="secs" id="secs"></div>
 
 <footer><p>🍊 日付クリックでタスク追加 ｜ 📅 固定タスクは毎月自動表示 ｜ 未完了は翌月へ繰り越し</p></footer>
+
+<!-- Edit Task Modal -->
+<div class="emodal-backdrop" id="emodal">
+  <div class="emodal">
+    <div class="emodal-handle"></div>
+    <div class="emodal-hd">
+      <span class="emodal-title">✏️ タスクを編集</span>
+      <button class="xbtn" id="emodalClose">✕</button>
+    </div>
+    <div class="emod-field">
+      <label class="emod-label">📝 タスクの内容</label>
+      <input class="emod-input" id="emodText" type="text" placeholder="タスクの内容...">
+    </div>
+    <div class="emod-field">
+      <label class="emod-label">📅 日付</label>
+      <input class="emod-input date-input" id="emodDate" type="date">
+    </div>
+    <div class="emod-field">
+      <label class="emod-label">🏷️ カテゴリ ／ ⚡ 優先度</label>
+      <div class="emod-selrow">
+        <select class="emod-sel" id="emodTag">
+          <option value="life">🏠 生活</option>
+          <option value="work">💼 仕事</option>
+          <option value="health">🏃 健康</option>
+          <option value="study">📚 学習</option>
+          <option value="fun">🎮 趣味</option>
+        </select>
+        <select class="emod-sel" id="emodPrio">
+          <option value="high">🔴 高優先度</option>
+          <option value="mid">🟡 中優先度</option>
+          <option value="low">⚪ 低優先度</option>
+        </select>
+      </div>
+    </div>
+    <div class="emod-btnrow">
+      <button class="emod-cancel" id="emodalCancel">キャンセル</button>
+      <button class="emod-save" id="emodalSave">保存する</button>
+    </div>
+  </div>
+</div>
 
 <!-- Recurring Modal -->
 <div class="overlay" id="rModal">
@@ -830,39 +900,70 @@ function makeTIEl(t,mk){
     if(e.target.classList.contains('delbtn')||e.target.classList.contains('editbtn'))return;
     toggleTask(t.id,mk);
   });
-  el.querySelector('.editbtn').addEventListener('click',e=>{ e.stopPropagation(); startEdit(el,t,mk); });
+  el.querySelector('.editbtn').addEventListener('click',e=>{ e.stopPropagation(); openEditModal(t,mk); });
   el.querySelector('.delbtn').addEventListener('click',()=>deleteTask(t.id,mk));
   return el;
 }
 
-function startEdit(el,t,mk){
-  const main=el.querySelector('.ti-main');
-  const btns=el.querySelector('.ti-btns');
-  main.style.display='none'; btns.style.display='none';
+// ── EDIT MODAL ──
+let _editTarget = null; // {t, mk}
 
-  const inp=document.createElement('input');
-  inp.className='edit-input'; inp.value=t.text;
-  const save=document.createElement('button');
-  save.className='savebtn'; save.textContent='保存';
-  const cancel=document.createElement('button');
-  cancel.className='cancelbtn'; cancel.textContent='キャンセル';
-
-  const row=document.createElement('div');
-  row.className='arow'; row.style.flex='1';
-  row.appendChild(inp); row.appendChild(save); row.appendChild(cancel);
-  el.appendChild(row);
-  inp.focus(); inp.select();
-
-  const doSave=()=>{
-    const newText=inp.value.trim(); if(!newText)return;
-    const task=(D.months[mk]||[]).find(x=>x.id===t.id);
-    if(task){task.text=newText; saveAndSync();}
-  };
-  const doCancel=()=>{ row.remove(); main.style.display=''; btns.style.display=''; };
-  save.addEventListener('click',doSave);
-  cancel.addEventListener('click',doCancel);
-  inp.addEventListener('keydown',e=>{ if(e.key==='Enter')doSave(); if(e.key==='Escape')doCancel(); });
+function openEditModal(t, mk) {
+  _editTarget = {t, mk};
+  document.getElementById('emodText').value = t.text;
+  document.getElementById('emodDate').value = t.date;
+  document.getElementById('emodTag').value = t.tag || 'life';
+  document.getElementById('emodPrio').value = t.priority || 'mid';
+  document.getElementById('emodal').classList.add('on');
+  document.getElementById('emodText').focus();
+  document.getElementById('emodText').select();
 }
+
+function closeEditModal() {
+  document.getElementById('emodal').classList.remove('on');
+  _editTarget = null;
+}
+
+function saveEditModal() {
+  if (!_editTarget) return;
+  const {t, mk} = _editTarget;
+  const newText = document.getElementById('emodText').value.trim();
+  if (!newText) return;
+  const newDate = document.getElementById('emodDate').value;
+  const newTag  = document.getElementById('emodTag').value;
+  const newPrio = document.getElementById('emodPrio').value;
+
+  // タスクデータを探してどの月にあるか更新
+  let found = false;
+  for (const k of Object.keys(D.months)) {
+    const task = D.months[k].find(x => x.id === t.id);
+    if (task) {
+      task.text = newText;
+      task.date = newDate || task.date;
+      task.tag  = newTag;
+      task.priority = newPrio;
+      // 日付が変わった場合は正しい月に移動
+      if (newDate) {
+        const [ny, nm] = newDate.split('-').map(Number);
+        const newMk = mkey(ny, nm);
+        if (newMk !== k) {
+          D.months[k] = D.months[k].filter(x => x.id !== t.id);
+          if (!D.months[newMk]) D.months[newMk] = [];
+          D.months[newMk].push(task);
+        }
+      }
+      found = true; break;
+    }
+  }
+  if (found) { saveAndSync(); }
+  closeEditModal();
+}
+
+document.getElementById('emodalSave').addEventListener('click', saveEditModal);
+document.getElementById('emodalCancel').addEventListener('click', closeEditModal);
+document.getElementById('emodalClose').addEventListener('click', closeEditModal);
+document.getElementById('emodal').addEventListener('click', e => { if (e.target === document.getElementById('emodal')) closeEditModal(); });
+document.getElementById('emodText').addEventListener('keydown', e => { if (e.key === 'Enter') saveEditModal(); if (e.key === 'Escape') closeEditModal(); });
 
 // ── ACTIONS ──
 function toggleTask(id,mk){
