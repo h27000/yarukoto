@@ -356,6 +356,7 @@
 
 <div class="secs" id="secs"></div>
 
+<footer><p>📍 固定タスクは毎月・毎週・毎日対応 ｜ 未完了は翌月へ繰り越し</p></footer>
 
 <!-- Add Task Modal -->
 <div class="emodal-backdrop" id="amodal">
@@ -485,13 +486,13 @@
 
       <!-- タブ -->
       <div class="stab-nav">
-        <button class="stab on" id="tabSync" onclick="switchTab('sync')">同期</button>
-        <button class="stab" id="tabBackup" onclick="switchTab('backup')">バックアップ</button>
+        <button class="stab on" id="tabBackup" onclick="switchTab('backup')">バックアップ</button>
         <button class="stab" id="tabCategory" onclick="switchTab('category')">カテゴリ</button>
+        <button class="stab" id="tabSync" onclick="switchTab('sync')">同期</button>
       </div>
 
       <!-- 同期タブ -->
-      <div class="stab-panel on" id="panelSync">
+      <div class="stab-panel" id="panelSync">
         <div id="syncStatus" style="margin-bottom:12px"></div>
         <div class="mlabel">① Firebase Database URL を入力</div>
         <div class="setup-steps">
@@ -522,7 +523,7 @@
       </div>
 
       <!-- バックアップタブ -->
-      <div class="stab-panel" id="panelBackup">
+      <div class="stab-panel on" id="panelBackup">
         <div class="bk-row">
           <div class="bk-icon">🔄</div>
           <div class="bk-info">
