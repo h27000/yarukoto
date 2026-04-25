@@ -208,6 +208,24 @@
     .mlabel{font-size:.8rem;font-weight:700;color:var(--muted);margin:10px 0 5px}
     .mrow{display:flex;gap:7px;align-items:center}
 
+    /* QUICK ADD */
+    .qadd-card{background:var(--card);border-radius:20px;margin-top:10px;
+      box-shadow:0 3px 16px rgba(255,140,0,.09);border:1.5px solid var(--border);overflow:hidden}
+    .qadd-togbtn{width:100%;padding:11px 16px;background:none;border:none;cursor:pointer;
+      display:flex;align-items:center;gap:8px;font-family:inherit;font-size:.9rem;
+      font-weight:800;color:var(--or);transition:background .15s}
+    .qadd-togbtn:hover{background:rgba(255,140,0,.06)}
+    .qadd-togbtn .plus{width:26px;height:26px;border-radius:50%;
+      background:linear-gradient(135deg,var(--or),var(--yl));color:#fff;
+      display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+    .qadd-form{display:none;padding:4px 14px 14px;border-top:1px solid var(--border)}
+    .qadd-form.on{display:block}
+    .qadd-row1{display:flex;gap:6px;align-items:center;margin-bottom:7px;flex-wrap:wrap}
+    .qadd-row2{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .date-input{padding:7px 8px;border-radius:8px;border:1.5px solid #ffb300;
+      background:#fffef5;font-size:.8rem;font-family:inherit;color:var(--txt);outline:none;cursor:pointer}
+    .date-input:focus{border-color:var(--or);box-shadow:0 0 0 2px rgba(255,140,0,.1)}
+
     footer{text-align:center;margin-top:28px;font-size:.74rem;color:var(--muted);opacity:.6}
     @media(max-width:500px){.hd-right{gap:5px}.chart-card{gap:12px}}
   </style>
@@ -263,6 +281,31 @@
       <div class="wdl sat">土</div>
     </div>
     <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <!-- Quick Add -->
+  <div class="qadd-card" id="qaddCard">
+    <button class="qadd-togbtn" id="qaddTogBtn">
+      <span class="plus">＋</span>タスクを追加
+    </button>
+    <div class="qadd-form" id="qaddForm">
+      <div class="qadd-row1">
+        <input class="ainput" id="qaddInput" type="text" placeholder="タスクの内容..." style="flex:1;min-width:180px">
+        <input class="date-input" id="qaddDate" type="date">
+      </div>
+      <div class="qadd-row2">
+        <select class="asel" id="qaddTag">
+          <option value="life">🏠 生活</option><option value="work">💼 仕事</option>
+          <option value="health">🏃 健康</option><option value="study">📚 学習</option>
+          <option value="fun">🎮 趣味</option>
+        </select>
+        <select class="asel" id="qaddPrio">
+          <option value="high">🔴 高</option><option value="mid" selected>🟡 中</option>
+          <option value="low">⚪ 低</option>
+        </select>
+        <button class="abtn" id="qaddBtn" style="margin-left:auto">追加する</button>
+      </div>
+    </div>
   </div>
 
   <!-- Day Panel -->
@@ -920,6 +963,42 @@ document.getElementById('dpAddBtn').addEventListener('click',()=>{
   document.getElementById('dpInput').value=''; saveAndSync();
 });
 document.getElementById('dpInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('dpAddBtn').click();});
+
+// Quick Add
+(function(){
+  const togBtn=document.getElementById('qaddTogBtn');
+  const form=document.getElementById('qaddForm');
+  const inp=document.getElementById('qaddInput');
+  const dateEl=document.getElementById('qaddDate');
+  const tagEl=document.getElementById('qaddTag');
+  const prioEl=document.getElementById('qaddPrio');
+  const addBtn=document.getElementById('qaddBtn');
+
+  function setDefaultDate(){
+    const n=new Date();
+    const y=n.getFullYear(),m=n.getMonth()+1,d=n.getDate();
+    if(y===CY&&m===CM) dateEl.value=fmt(y,m,d);
+    else dateEl.value=fmt(CY,CM,1);
+  }
+
+  togBtn.addEventListener('click',()=>{
+    const open=form.classList.toggle('on');
+    togBtn.querySelector('.plus').textContent=open?'−':'＋';
+    if(open){ setDefaultDate(); inp.focus(); }
+  });
+
+  function doAdd(){
+    const text=inp.value.trim(); if(!text)return;
+    const ds=dateEl.value||fmt(CY,CM,1);
+    const [y,m]=ds.split('-').map(Number);
+    mTasks(y,m).push({id:uid(),text,tag:tagEl.value,priority:prioEl.value,date:ds,done:false,carriedFrom:null});
+    inp.value=''; setDefaultDate(); inp.focus();
+    saveAndSync();
+  }
+
+  addBtn.addEventListener('click',doAdd);
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter')doAdd(); });
+})();
 
 // Sync modal
 document.getElementById('syncBtn').addEventListener('click',()=>{
