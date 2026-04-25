@@ -1105,8 +1105,7 @@ function renderCatEdit(){
   Object.keys(DEFAULT_TAGS).forEach(key=>{
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px';
-    row.innerHTML=`<span style="font-size:.78rem;color:var(--muted);width:36px;flex-shrink:0">${DEFAULT_TAGS[key]}</span>
-      <input class="emod-input" style="flex:1;padding:7px 10px" data-key="${key}"
+    row.innerHTML=`<input class="emod-input" style="flex:1;padding:7px 10px" data-key="${key}"
         type="text" value="${escH(TAGS[key])}" placeholder="${DEFAULT_TAGS[key]}">`;
     list.appendChild(row);
   });
