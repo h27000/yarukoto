@@ -539,30 +539,37 @@ function renderDP(ds){
   const tasks=mTasks(y,m).filter(t=>t.date===ds)
     .sort((a,b)=>PRIOORD[a.priority||'mid']-PRIOORD[b.priority||'mid']);
   const recs=D.rec.filter(r=>r.day===d);
-  let h='';
+  const cont=document.getElementById('dpContent'); cont.innerHTML='';
+
   if(recs.length){
-    h+=`<div class="sec-lbl">🔁 固定タスク</div>`;
+    const lbl=document.createElement('div'); lbl.className='sec-lbl'; lbl.textContent='📍 固定タスク';
+    cont.appendChild(lbl);
     for(const r of recs){
       const done=isRecDone(r.id,y,m,d);
-      h+=tiHtml(r.id,r.text,r.tag,'mid',done,false,true,`data-rid="${r.id}" data-y="${y}" data-m="${m}" data-d="${d}"`);
+      const el=document.createElement('div');
+      el.className=`ti rec-ti${done?' done':''}`;
+      el.style.marginBottom='6px';
+      el.innerHTML=`<div class="prio-dot pm"></div><div class="cb"></div>
+        <span class="ttxt">${escH(r.text)}</span>
+        <span class="tag ${TAGCLS[r.tag]||'tl'}">${TAGS[r.tag]||r.tag}</span>`;
+      el.addEventListener('click',()=>{ toggleRecDoneData(r.id,y,m,d); saveAndSync(); });
+      cont.appendChild(el);
     }
   }
+
   if(tasks.length){
-    if(recs.length) h+=`<div class="sec-lbl" style="margin-top:9px">📝 この日のタスク</div>`;
-    for(const t of tasks)
-      h+=tiHtml(t.id,t.text,t.tag,t.priority||'mid',t.done,true,false,`data-tid="${t.id}" data-mk="${mkey(y,m)}"`);
+    if(recs.length){ const lbl=document.createElement('div'); lbl.className='sec-lbl'; lbl.style.marginTop='9px'; lbl.textContent='📝 この日のタスク'; cont.appendChild(lbl); }
+    for(const t of tasks){
+      const el=makeTIEl(t, mkey(y,m));
+      el.style.marginBottom='6px';
+      cont.appendChild(el);
+    }
   }
-  if(!recs.length&&!tasks.length) h='<div class="empty">タスクがありません</div>';
-  const el=document.getElementById('dpContent'); el.innerHTML=h;
-  el.querySelectorAll('[data-rid]').forEach(el=>el.addEventListener('click',()=>{
-    toggleRecDoneData(el.dataset.rid,+el.dataset.y,+el.dataset.m,+el.dataset.d);
-    saveAndSync();
-  }));
-  el.querySelectorAll('[data-tid]').forEach(el=>el.addEventListener('click',e=>{
-    if(e.target.classList.contains('delbtn'))return;
-    toggleTask(el.dataset.tid,el.dataset.mk);
-  }));
-  el.querySelectorAll('.delbtn[data-del]').forEach(b=>b.addEventListener('click',()=>deleteTask(b.dataset.del,b.dataset.mk)));
+
+  if(!recs.length&&!tasks.length){
+    const empty=document.createElement('div'); empty.className='empty'; empty.textContent='タスクがありません';
+    cont.appendChild(empty);
+  }
 }
 
 function tiHtml(id,text,tag,prio,done,showDel,isRec,extra){
