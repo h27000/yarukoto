@@ -1220,25 +1220,6 @@ document.getElementById('syncCodeBox')?.addEventListener('click',()=>{
 // Pull on window focus
 window.addEventListener('focus',()=>{ if(conf.dbUrl&&conf.syncCode) pullFromFirebase(); });
 
-// ── SEED ──
-if(!Object.keys(D.months).length){
-  const days=dim(CY,CM);
-  const d=(n)=>fmt(CY,CM,Math.min(n,days));
-  D.months[mkey(CY,CM)]=[
-    {id:uid(),text:'今月の目標を書き出す',tag:'life',priority:'high',date:d(1),done:false,carriedFrom:null},
-    {id:uid(),text:'部屋の片付け・断捨離',tag:'life',priority:'mid',date:d(3),done:false,carriedFrom:null},
-    {id:uid(),text:'読みたかった本を1冊読む',tag:'fun',priority:'low',date:d(7),done:false,carriedFrom:null},
-    {id:uid(),text:'週3回 30分ウォーキング',tag:'health',priority:'high',date:d(10),done:false,carriedFrom:null},
-    {id:uid(),text:'仕事の月次レポート作成',tag:'work',priority:'high',date:d(15),done:false,carriedFrom:null},
-    {id:uid(),text:'資格・勉強の進捗確認',tag:'study',priority:'mid',date:d(20),done:false,carriedFrom:null},
-    {id:uid(),text:'今月の振り返り日記を書く',tag:'life',priority:'mid',date:d(days),done:false,carriedFrom:null},
-  ];
-  D.rec=[
-    {id:uid(),text:'家計簿・支出記録',tag:'life',day:1},
-    {id:uid(),text:'給与明細の確認',tag:'work',day:25},
-  ];
-  save();
-}
 
 // Init sync if already configured
 if(conf.dbUrl&&conf.syncCode){ setSyncState('pending'); pullFromFirebase(); }
