@@ -43,6 +43,12 @@
     .prog-bg{flex:1;background:rgba(255,255,255,.3);border-radius:99px;height:8px;overflow:hidden}
     .prog-bar{height:100%;background:#fff;border-radius:99px;width:0;transition:width .5s}
     .prog-txt{color:rgba(255,255,255,.92);font-size:.78rem;white-space:nowrap;min-width:60px;text-align:right}
+    .space-nav{display:flex;gap:6px;margin:7px 0 9px}
+    .spbtn{background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.28);
+      color:rgba(255,255,255,.75);padding:4px 15px;border-radius:99px;cursor:pointer;
+      font-size:.78rem;font-family:inherit;font-weight:700;transition:all .18s;white-space:nowrap}
+    .spbtn.on{background:rgba(255,255,255,.38);border-color:rgba(255,255,255,.85);color:#fff}
+    .spbtn:hover{background:rgba(255,255,255,.28)}
 
     /* CALENDAR */
     .wrap{max-width:860px;margin:20px auto 0;padding:0 13px}
@@ -290,6 +296,10 @@
       <button class="syncbtn" id="syncBtn"><span class="sync-dot off" id="syncDot"></span>設定</button>
       <button class="rbtn" id="rBtn">📍</button>
     </div>
+  </div>
+  <div class="space-nav">
+    <button class="spbtn" id="spTodo">📝 やること</button>
+    <button class="spbtn" id="spCleaning">🧹 掃除</button>
   </div>
   <div class="prog-wrap">
     <div class="prog-bg"><div class="prog-bar" id="pBar"></div></div>
@@ -570,15 +580,25 @@
 // Format: https://your-project-default-rtdb.firebaseio.com
 // ─────────────────────────────────────────────────────────
 
-const KEY = 'yarukoto_v3';
-const CONF_KEY = 'yarukoto_conf';
+// ── SPACES ──
+const SPACE_DEFS = {
+  todo:     { dataKey:'yarukoto_v3',          confKey:'yarukoto_conf',
+              name:'やること', icon:'📝',
+              defaultTags:{health:'健康',work:'仕事',life:'生活',study:'学習',fun:'趣味'} },
+  cleaning: { dataKey:'yarukoto_cleaning_v1', confKey:'yarukoto_cleaning_conf',
+              name:'掃除',   icon:'🧹',
+              defaultTags:{kitchen:'キッチン',bath:'お風呂',living:'リビング',toilet:'トイレ',other:'その他'} }
+};
+let currentSpace = localStorage.getItem('yarukoto_space') || 'todo';
+let KEY      = SPACE_DEFS[currentSpace].dataKey;
+let CONF_KEY = SPACE_DEFS[currentSpace].confKey;
 
 function loadConf(){ try{return JSON.parse(localStorage.getItem(CONF_KEY))||{};}catch{return{};} }
 function saveConf(c){ localStorage.setItem(CONF_KEY,JSON.stringify(c)); }
 
-// Firebase URL を事前設定
 let conf = loadConf();
-if (!conf.dbUrl) {
+// todo スペースのみ Firebase URL を事前設定
+if (currentSpace==='todo' && !conf.dbUrl) {
   conf.dbUrl = 'https://tasklist-ea51c-default-rtdb.firebaseio.com';
   if (!conf.syncCode) conf.syncCode = uid();
   saveConf(conf);
@@ -613,10 +633,12 @@ function fdow(y,m){ return new Date(y,m-1,1).getDay(); }
 function mTasks(y,m){ const k=mkey(y,m); if(!D.months[k])D.months[k]=[]; return D.months[k]; }
 
 const WD=['日','月','火','水','木','金','土'];
-const DEFAULT_TAGS={health:'健康',work:'仕事',life:'生活',study:'学習',fun:'趣味'};
+let DEFAULT_TAGS={...SPACE_DEFS[currentSpace].defaultTags};
 let TAGS={...DEFAULT_TAGS,...(conf.tags||{})};
-const DOTCLS={health:'dh',work:'dw',life:'dl',study:'ds',fun:'df'};
-const TAGCLS={health:'th',work:'tw',life:'tl',study:'ts',fun:'tf'};
+const DOTCLS={health:'dh',work:'dw',life:'dl',study:'ds',fun:'df',
+  kitchen:'dl',bath:'dh',living:'df',toilet:'dw',other:'ds'};
+const TAGCLS={health:'th',work:'tw',life:'tl',study:'ts',fun:'tf',
+  kitchen:'tl',bath:'th',living:'tf',toilet:'tw',other:'ts'};
 const PRIOCLS={high:'ph',mid:'pm',low:'pl'};
 const PRIOLBL={high:'高',mid:'中',low:'低'};
 const PRIOORD={high:0,mid:1,low:2};
@@ -733,6 +755,37 @@ function saveAndSync(){
 // ── RENDER ──
 function render(){ renderHeader(); renderCal(); renderChart(); renderSecs(); updateProg(); if(selDate)renderDP(selDate); }
 function renderHeader(){ document.getElementById('mTitle').textContent=`${CY}年${CM}月`; }
+
+// スペース切替時にカテゴリ選択肢を更新
+function renderTagOptions(){
+  const html=Object.entries(DEFAULT_TAGS).map(([k,v])=>`<option value="${k}">${escH(v)}</option>`).join('');
+  ['amodTag','emodTag','rTag'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=html;});
+}
+
+function switchSpace(name){
+  if(name===currentSpace) return;
+  currentSpace=name;
+  localStorage.setItem('yarukoto_space',name);
+  const def=SPACE_DEFS[name];
+  KEY=def.dataKey; CONF_KEY=def.confKey;
+  DEFAULT_TAGS={...def.defaultTags};
+  conf=loadConf();
+  // 掃除スペース初回: Firebase URL を todo からコピー
+  if(name==='cleaning'&&!conf.dbUrl){
+    const tc=JSON.parse(localStorage.getItem('yarukoto_conf')||'{}');
+    if(tc.dbUrl){conf.dbUrl=tc.dbUrl;conf.syncCode=(tc.syncCode||uid())+'_cleaning';saveConf(conf);}
+  }
+  TAGS={...DEFAULT_TAGS,...(conf.tags||{})};
+  D=load();
+  selDate=null;
+  document.getElementById('dpanel').classList.remove('on');
+  document.querySelectorAll('.spbtn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('sp'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('on');
+  setSyncState(conf.dbUrl&&conf.syncCode?'ok':'off');
+  renderTagOptions();
+  render();
+  if(conf.dbUrl&&conf.syncCode){ setSyncState('pending'); pullFromFirebase(); }
+}
 
 function renderCal(){
   const grid=document.getElementById('calGrid'); grid.innerHTML='';
@@ -892,11 +945,9 @@ function makeAllTasks(){
   // 追加ボタン
   const tog=document.createElement('button'); tog.className='togbtn'; tog.textContent='＋ タスクを追加';
   const arow=document.createElement('div'); arow.className='arow'; arow.style.display='none';
+  const tagOpts=Object.entries(DEFAULT_TAGS).map(([k,v])=>`<option value="${k}">${escH(v)}</option>`).join('');
   arow.innerHTML=`<input class="ainput" type="text" placeholder="タスクを追加...">
-    <select class="asel">
-      <option value="life">生活</option><option value="work">仕事</option>
-      <option value="health">健康</option><option value="study">学習</option><option value="fun">趣味</option>
-    </select>
+    <select class="asel">${tagOpts}</select>
     <select class="asel">
       <option value="high">高</option><option value="mid" selected>中</option><option value="low">低</option>
     </select>
@@ -1125,6 +1176,7 @@ function recSortKey(r){
   return '2_'+String(r.day).padStart(2,'0');
 }
 function renderRModal(){
+  renderTagOptions(); // スペースに応じてカテゴリ更新
   const list=document.getElementById('rList'); list.innerHTML='';
   if(!D.rec.length){list.innerHTML='<div class="empty">固定タスクがありません</div>';return;}
   [...D.rec].sort((a,b)=>recSortKey(a)<recSortKey(b)?-1:1).forEach(r=>{
@@ -1251,7 +1303,7 @@ function openAddModal(presetDate){
   document.getElementById('amodText').value='';
   document.getElementById('amodDate').value=presetDate||
     (n.getFullYear()===CY&&n.getMonth()+1===CM?todayStr:fmt(CY,CM,1));
-  document.getElementById('amodTag').value='life';
+  document.getElementById('amodTag').value=Object.keys(DEFAULT_TAGS)[0];
   document.getElementById('amodPrio').value='mid';
   document.getElementById('amodal').classList.add('on');
   setTimeout(()=>document.getElementById('amodText').focus(),80);
@@ -1306,10 +1358,18 @@ document.getElementById('syncCodeBox')?.addEventListener('click',()=>{
 window.addEventListener('focus',()=>{ if(conf.dbUrl&&conf.syncCode) pullFromFirebase(); });
 
 
+// スペース切替ボタン
+document.getElementById('spTodo').addEventListener('click',()=>switchSpace('todo'));
+document.getElementById('spCleaning').addEventListener('click',()=>switchSpace('cleaning'));
+
+// 初期スペースボタンをアクティブに
+document.getElementById('sp'+currentSpace.charAt(0).toUpperCase()+currentSpace.slice(1)).classList.add('on');
+
 // Init sync if already configured
 if(conf.dbUrl&&conf.syncCode){ setSyncState('pending'); pullFromFirebase(); }
 
 render();
+renderTagOptions(); // 初期スペースのカテゴリを設定
 
 // ── PWA ICON (みかん☀️チェック) ──
 (function(){
