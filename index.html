@@ -17,15 +17,15 @@
       --card:rgba(255,255,255,.84);--border:rgba(255,180,50,.3)}
     body{font-family:'Hiragino Sans','Yu Gothic','Noto Sans JP',sans-serif;
       background:linear-gradient(135deg,#fff8e1 0%,#fff3cd 55%,#ffe0b2 100%);
-      min-height:100vh;color:var(--txt);padding-bottom:60px}
+      min-height:100vh;color:var(--txt);padding-bottom:60px;overflow-x:hidden}
 
     /* HEADER */
     header{background:linear-gradient(135deg,var(--or),var(--yl));
       padding:14px 18px 12px;position:sticky;top:0;z-index:100;
       box-shadow:0 3px 18px rgba(255,140,0,.3)}
     .hd-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;gap:8px}
-    .mnav{display:flex;align-items:center;gap:8px}
-    .mnav h1{color:#fff;font-size:1.35rem;font-weight:900;min-width:140px;text-align:center}
+    .mnav{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+    .mnav h1{color:#fff;font-size:1.35rem;font-weight:900;text-align:center;flex:1;min-width:0}
     .nbtn{background:rgba(255,255,255,.25);border:none;color:#fff;font-size:1.2rem;
       width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;
       align-items:center;justify-content:center;transition:background .2s;flex-shrink:0}
@@ -281,6 +281,13 @@
 
     footer{text-align:center;margin-top:28px;font-size:.74rem;color:var(--muted);opacity:.6}
     @media(max-width:500px){.hd-right{gap:5px}.chart-card{gap:12px}}
+    @media(max-width:400px){
+      header{padding:12px 13px 10px}
+      .mnav h1{font-size:1.1rem}
+      .nbtn{width:27px;height:27px;font-size:1rem}
+      .syncbtn,.rbtn{padding:5px 8px;font-size:.72rem}
+      .spbtn{padding:3px 10px;font-size:.72rem}
+    }
   </style>
 </head>
 <body>
